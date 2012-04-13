@@ -131,6 +131,8 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal(["d"], left_node.minis[0].right[0].to_a)
   end
 
+
+  # XXX: This test doesn't pass- need to fix!!  But in insert_after
   def test_medium_insert_after
     left_mini = MiniNode.new([], [], nil, "a")
     left_node = TreeNode.new([left_mini])
@@ -146,8 +148,12 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal(referenceNode, root_node)
 
     assert_equal(false, referenceNode.check_empty_right())
+    farthest_left_node = referenceNode.minis[0].right[0].find_farthest_left()
+    assert_equal(right_node, farthest_left_node)
     
-    #Test not finished.
+    root_node.insert_after(path, "d")
+    assert_equal(["d"], right_node.minis[0].left[0].to_a)    
+  end
     
     
 end
