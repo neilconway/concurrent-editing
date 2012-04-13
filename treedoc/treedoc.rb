@@ -81,7 +81,7 @@ class TreeNode
     if self.minis[minis.length - 1].right[0] == nil
       return self
     else
-      return self.minis[minis.length -1].right[0].find_farthest_right()
+      return self.minis[minis.length - 1].right[0].find_farthest_right()
     end
   end
   
@@ -103,7 +103,7 @@ class TreeNode
     if referenceNode.check_empty_left()
       referenceNode.minis[0].left[0] = new_node
     else
-      farthestRightNode = referenceNode.find_farthest_right()
+      farthestRightNode = referenceNode.minis[0].left[0].find_farthest_right()
       farthestRightNode.minis[minis.length - 1].right[0] = new_node
     end
   end
