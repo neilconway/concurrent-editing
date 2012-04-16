@@ -23,6 +23,20 @@ class TreeNodeTest < Test::Unit::TestCase
 
   end
 
+  def test_right_child_left_child
+    left_mini = MiniNode.new([], [], nil, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], nil, "c")
+    right_node = TreeNode.new([right_mini])
+
+    root_mini = MiniNode.new([left_node], [right_node], nil, "b")
+    root_node = TreeNode.new([root_mini])
+
+    assert_equal(left_node, root_node.left_child())
+    assert_equal(right_node, root_node.right_child())
+  end
+
   def test_find_basic_triangle
     left_mini = MiniNode.new([], [], nil, "a")
     left_node = TreeNode.new([left_mini])
@@ -33,7 +47,7 @@ class TreeNodeTest < Test::Unit::TestCase
     root_mini = MiniNode.new([left_node], [right_node], nil, "b")
     root_node = TreeNode.new([root_mini])
     
-    path = [1] 
+    path = [1]
     found_node = root_node.find_tree_node(path) 
     assert_equal(right_node, found_node)
   end
@@ -132,7 +146,6 @@ class TreeNodeTest < Test::Unit::TestCase
   end
 
 
-  # XXX: This test doesn't pass- need to fix!!  But in insert_after
   def test_medium_insert_after
     left_mini = MiniNode.new([], [], nil, "a")
     left_node = TreeNode.new([left_mini])
@@ -154,7 +167,47 @@ class TreeNodeTest < Test::Unit::TestCase
     root_node.insert_after(path, "d")
     assert_equal(["d"], right_node.minis[0].left[0].to_a)    
   end
+
+  def test_hard_insert_before
+    far_left_mini = MiniNode.new([], [], nil, "d")
+    far_left_node = TreeNode.new([far_left_mini])
     
+    left_mini = MiniNode.new([far_left_node], [], nil, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], nil, "c")
+    right_node = TreeNode.new([right_mini])
     
+    root_mini = MiniNode.new([left_node], [right_node], nil, "b")
+    root_node = TreeNode.new([root_mini])
+
+    path = [0]    
+    root_node.insert_before(path, "e")
+    assert_equal(["e"], far_left_node.minis[0].right[0].to_a)
+  end
+
+  def test_crazy_hard_insert_before
+    far_left_mini = MiniNode.new([], [], nil, "d")
+    far_left_node = TreeNode.new([far_left_mini])
+    
+    left_mini = MiniNode.new([far_left_node], [], nil, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], nil, "c")
+    right_node = TreeNode.new([right_mini])
+    
+    root_mini = MiniNode.new([left_node], [right_node], nil, "b")
+    root_node = TreeNode.new([root_mini])
+
+    path = [0]    
+    root_node.insert_before(path, "e")
+    root_node.insert_before(path, "f")
+    
+    assert_equal(["f"], far_left_node.minis[0].right[0].minis[0].right[0].to_a)
+  end
+    
+  def test_hard_insert_after
+    
+  end
 end
 

@@ -44,15 +44,23 @@ class TreeNode
       m.each(&blk)
     end
   end
+
+  def right_child()
+    return self.minis[minis.length - 1].right[0]
+  end
+  
+  def left_child()
+    return self.minis[0].left[0]
+  end
   
 
   # Finds treeNode at the end of specified path
   def find_tree_node(path)
     if path.first == nil
       return self
-    elsif path.first == 1
+    elsif path.first[0] == 1
       return self.minis[minis.length - 1].right[0].find_tree_node(path[1..path.length])
-    elsif path.first == 0
+    elsif path.first[0] == 0
       return self.minis[0].left[0].find_tree_node(path[1..path.length])
     end
   end
@@ -115,7 +123,7 @@ class TreeNode
     if referenceNode.check_empty_right()
       referenceNode.minis[minis.length - 1].right[0] = new_node
     else
-      farthestLeftNode = referenceNode.find_farthest_left()
+      farthestLeftNode = referenceNode.minis[minis.length - 1].right[0].find_farthest_left()
       farthestLeftNode.minis[0].left[0] = new_node
     end
   end 
