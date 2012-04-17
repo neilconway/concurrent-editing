@@ -53,15 +53,25 @@ class TreeNode
     return self.minis[0].left[0]
   end
   
+  def find_index_of_mini(dis)
+    self.minis.each do |mini|
+      if mini.dis == dis
+        return self.minis.index(mini)
+      end
+    end
+  end
+
 
   # Finds treeNode at the end of specified path
   def find_tree_node(path)
     if path.first == nil
       return self
+    elsif path.first[0] == nil
+      return self
     elsif path.first[0] == 1
-      return self.minis[minis.length - 1].right[0].find_tree_node(path[1..path.length])
+      return self.minis[self.find_index_of_mini(path.first[1])].right[0].find_tree_node(path[1..path.length])
     elsif path.first[0] == 0
-      return self.minis[0].left[0].find_tree_node(path[1..path.length])
+      return self.minis[self.find_index_of_mini(path.first[1])].left[0].find_tree_node(path[1..path.length])
     end
   end
   
@@ -102,8 +112,6 @@ class TreeNode
     end
   end
   
-  # XXX: Insertion methods do not deal with disambiguators yet
-  
   def insert_before(path, atom)
     new_mini = MiniNode.new([],[], nil, atom)
     new_node = TreeNode.new([new_mini])
@@ -127,6 +135,35 @@ class TreeNode
       farthestLeftNode.minis[0].left[0] = new_node
     end
   end 
+
+  def delete(path)
+    node_to_delete = find_tree_node(path)
+    path.pop
+    parent_node = find_tree_node(path)
+    if parent_node.left_child == node_to_delete
+      parent_node.left = nil
+    elsif parent_node.right_child == node_to_delete
+      parent_node.right = nil
+    end
+    
+  end
+    
+
+
+  def mergeNode(n)
+    myMinis = self.minis
+    
+    
+    return newNode
+  end
+
+
+  #Assuming t is the rootnode of tree we want to merge with
+  def merge(t)
+    
+    
+  end
+    
   
   
 end   
