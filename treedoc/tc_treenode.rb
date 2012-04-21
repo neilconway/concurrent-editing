@@ -56,10 +56,6 @@ class TreeNodeTest < Test::Unit::TestCase
     root_node = TreeNode.new([root_mini])
     
     path = [[1,0]]
-    assert_equal(path.first, [1,0])
-    assert_equal(path.first[0], 1)
-    assert_equal(path.first[1], 0)
-    assert_equal(root_node.find_index_of_mini(path.first[1]), 0)
     found_node = root_node.find_tree_node(path) 
     assert_equal(right_node, found_node)
   end
@@ -80,11 +76,9 @@ class TreeNodeTest < Test::Unit::TestCase
     root_mini = MiniNode.new([left_node], [right_node], 0, "b")
     root_node = TreeNode.new([root_mini])
 
-    path = [[0, 0], [0, 0], [0, 0]]
+    path = [[0, 0], [0, 0], [0, 0], [nil, 0]]
     found_node = root_node.find_tree_node(path)
-    assert_equal(found_node, farthest_left_node)
-    
-    
+    assert_equal(found_node, farthest_left_node)  
   end
 
   def test_basic_insert_after
@@ -101,7 +95,7 @@ class TreeNodeTest < Test::Unit::TestCase
     referenceNode = root_node.find_tree_node(path)
     assert_equal(referenceNode, right_node)
     assert_equal(true, referenceNode.check_empty_right())
-
+    path = [[1,0]]
     root_node.insert_after(path, "d")
 
     assert_equal(["d"], right_node.minis[0].right[0].to_a)
@@ -120,9 +114,12 @@ class TreeNodeTest < Test::Unit::TestCase
     path = [[0,0]]
     referenceNode = root_node.find_tree_node(path)
     assert_equal(referenceNode, left_node)
+    assert_equal(referenceNode.minis[0].left[0], nil)
     assert_equal(true, referenceNode.check_empty_left())
     
+    path = [[0,0]]
     root_node.insert_before(path, "d")
+    assert_equal(%w[d a b c], root_node.to_a)
     assert_equal(["d"], left_node.minis[0].left[0].to_a)
   end
 
@@ -175,7 +172,7 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal(false, referenceNode.check_empty_left())
     farthest_right_node = referenceNode.minis[0].left[0].find_farthest_right()
     assert_equal(left_node, farthest_right_node)
-    
+    path = [[nil, 0]]
     root_node.insert_before(path, "d")
     assert_equal(["d"], left_node.minis[0].right[0].to_a)
   end
@@ -236,10 +233,84 @@ class TreeNodeTest < Test::Unit::TestCase
 
     path = [[0,0]]    
     root_node.insert_before(path, "e")
+    path = [[0,0]] 
     root_node.insert_before(path, "f")
     
     assert_equal(["f"], far_left_node.minis[0].right[0].minis[0].right[0].to_a)
   end
+  
+  def test_mini_has_no_children
+    left_mini = MiniNode.new([], [], 0, "a")
+    
+    assert_equal(true, left_mini.has_no_children())
+  end
+
+  
+  def test_find_mini
+    left_mini = MiniNode.new([], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], 0, "c")
+    right_node = TreeNode.new([right_mini])
+
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini])
+    path = [[0, 0], [nil, 0]]
+
+    found_mini = root_node.find_mini(path)
+    assert_equal(found_mini, left_mini)
+  end
+
+  def test_simple_delete
+    left_mini = MiniNode.new([], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], 0, "c")
+    right_node = TreeNode.new([right_mini])
+
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini])
+    path = [[0, 0], [nil, 0]]
+   
+    root_node.delete(path)
+    assert_equal([nil, "b", "c"], root_node.to_a)
+  end
+    
+
+
+  def test_medium_delete
+    far_right_mini = MiniNode.new([], [], 0, "e")
+    far_right_node = TreeNode.new([far_right_mini])
+
+    far_left_mini = MiniNode.new([], [], 0, "d")
+    far_left_node = TreeNode.new([far_left_mini])
+    
+    left_mini = MiniNode.new([far_left_node], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [far_right_node], 0, "c")
+    right_node = TreeNode.new([right_mini])
+    
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini])
+
+    path1 = [[0,0], [0,0], [nil, 0]]
+    path2 = [[1,0], [1,0], [nil, 0]]
+    path3 = [[nil,0]]
+
+    root_node.delete(path1)
+    assert_equal([nil, "a", "b", "c", "e"], root_node.to_a)
+
+    root_node.delete(path2)
+    assert_equal([nil, "a", "b", "c", nil], root_node.to_a)
+
+    root_node.delete(path3)
+    assert_equal([nil, "a", nil, "c", nil], root_node.to_a)
+
+    
+  end
+
+
     
 end
 

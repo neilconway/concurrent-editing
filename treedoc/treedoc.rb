@@ -8,6 +8,7 @@ class MiniNode
   attr_reader :right
   attr_reader :dis
   attr_reader :atom
+  attr_writer :atom
   
   def initialize(l, r, d, a)
     @left = l
@@ -23,6 +24,14 @@ class MiniNode
     blk.call(@atom)     # XXX: tombstones?
     @right.each do |r|
       r.each(&blk)
+    end
+  end
+
+  def has_no_children()
+    if self.right == [] and self.left == []
+      return true
+    else
+      return false
     end
   end
 end
@@ -61,21 +70,26 @@ class TreeNode
     end
   end
 
-
-  # Finds treeNode at the end of specified path
   def find_tree_node(path)
-    if path.first == nil
+    if path.empty?
       return self
-    elsif path.first[0] == nil
+    end
+    if path.first[0] == nil
       return self
-    elsif path.first[0] == 1
-      return self.minis[self.find_index_of_mini(path.first[1])].right[0].find_tree_node(path[1..path.length])
-    elsif path.first[0] == 0
-      return self.minis[self.find_index_of_mini(path.first[1])].left[0].find_tree_node(path[1..path.length])
+    end
+    current_step = path[0]
+    dis = current_step[1]
+    index = self.find_index_of_mini(dis)
+    current_mini = self.minis[index]
+    if current_step[0] == 0
+      return current_mini.left[0].find_tree_node(path[1 .. path.length])
+    elsif current_step[0] == 1
+      return current_mini.right[0].find_tree_node(path[1 .. path.length])
     end
   end
   
-  # checks if TreeNode's left child is nil
+  
+
   def check_empty_left()
     if self.minis[0].left[0] == nil
       return true
@@ -84,7 +98,6 @@ class TreeNode
     end
   end
   
-  # checks if TreeNode's right child is nil
   def check_empty_right()
     if self.minis[minis.length - 1].right[0] == nil
       return true
@@ -112,11 +125,14 @@ class TreeNode
     end
   end
   
+
+  #XXX: should not be minis[0]
   def insert_before(path, atom)
     new_mini = MiniNode.new([],[], nil, atom)
     new_node = TreeNode.new([new_mini])
     referenceNode = self.find_tree_node(path)
-    if referenceNode.check_empty_left()
+
+    if referenceNode.check_empty_left() == true
       referenceNode.minis[0].left[0] = new_node
     else
       farthestRightNode = referenceNode.minis[0].left[0].find_farthest_right()
@@ -136,35 +152,87 @@ class TreeNode
     end
   end 
 
-  def delete(path)
-    node_to_delete = find_tree_node(path)
-    path.pop
-    parent_node = find_tree_node(path)
-    if parent_node.left_child == node_to_delete
-      parent_node.left = nil
-    elsif parent_node.right_child == node_to_delete
-      parent_node.right = nil
+  def has_no_children?()
+    self.minis.each do |mini|
+      if mini.left[0] != nil or mini.right[0] != nil
+        return false
+      end
     end
-    
-  end
-    
-
-
-  def mergeNode(n)
-    myMinis = self.minis
-    
-    
-    return newNode
+    return true
   end
 
 
-  #Assuming t is the rootnode of tree we want to merge with
-  def merge(t)
+  def has_one_child()
+    if self.minis[0].left == [] and self.minis[self.minis.length - 1].right != []
+      return true
+    elsif self.minis[0].left != [] and self.minis[self.minis.length - 1].right == []
+      return true
+    else
+      return false
+    end
+  end 
     
-    
+
+  def is_single()
+    if self.minis.length == 1
+      return true
+    else
+      return false
+    end
+  end
+
+
+  def find_direct_parent(path)
+    child = self.find_tree_node(path)
+    path.pop
+    path.pop
+    return self.find_tree_node(path)
   end
     
-  
+  def find_mini(path)
+    my_tree_node = self.find_tree_node(path)
+    temp = path[path.length - 1]
+    disam = temp[1]
+    index = my_tree_node.find_index_of_mini(disam)
+    return my_tree_node.minis[index]
+  end
+ 
+  def delete(path)
+    mini_to_delete = self.find_mini(path)
+    mini_to_delete.atom = nil
+  end
+    
+
+# Beginning of deletion method when I thought we had to modify the tree
+# structure... 
+  def delete_old(path)
+    reference_node = self.find_tree_node(path)
+    temp = path.pop
+    disam = temp[1]
+    mini_index = reference_node.find_index_of_mini(disam)
+    mini_to_delete = reference_node.minis[mini_index]
+    temp2 = path.pop
+    disam2 = temp2[1]
+    path.pop
+    parent_node = self.find_tree_node(path)
+    
+    parent_mini_index = parent_node.find_index_of_mini(disam2)
+    parent_mini = parent_node.minis[parent_mini_index]
+
+    if mini_to_delete.has_no_children()
+      if reference_node.is_single()
+        
+        if parent_mini.left[0] = reference_node
+          parent_mini.left[0] = nil
+        elsif parent_mini.right[0] = reference_node
+          parent_mini.right[0] = nil
+        end
+      
+      else
+        reference_node.minis.delete(mini_to_delete)
+      end
+    end
+  end
   
 end   
 
