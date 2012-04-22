@@ -197,6 +197,9 @@ class TreeNode
     return my_tree_node.minis[index]
   end
  
+
+ # Neil, if you are reading this, I think this delete method is too simple...
+ # But I'm going to wait until after quals to ask you about it :D
   def delete(path)
     mini_to_delete = self.find_mini(path)
     mini_to_delete.atom = nil
@@ -232,6 +235,30 @@ class TreeNode
         reference_node.minis.delete(mini_to_delete)
       end
     end
+  end
+
+  
+  def mergeNode(n)
+    myMinis = self.minis
+    
+    
+    return newNode
+  end
+
+
+  #Assuming t is the rootnode of tree we want to merge with
+  def merge(root)
+    
+    
+    root.minis.each do |mini|
+     if self.minis.include?(mini)
+       #do nothing>
+     else
+       self.minis << mini
+     end
+    end
+    
+    
   end
   
 end   

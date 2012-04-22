@@ -276,8 +276,6 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal([nil, "b", "c"], root_node.to_a)
   end
     
-
-
   def test_medium_delete
     far_right_mini = MiniNode.new([], [], 0, "e")
     far_right_node = TreeNode.new([far_right_mini])
@@ -306,8 +304,6 @@ class TreeNodeTest < Test::Unit::TestCase
 
     root_node.delete(path3)
     assert_equal([nil, "a", nil, "c", nil], root_node.to_a)
-
-    
   end
 
 
