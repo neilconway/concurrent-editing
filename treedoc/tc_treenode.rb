@@ -306,6 +306,80 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal([nil, "a", nil, "c", nil], root_node.to_a)
   end
 
+  def test_merge_node
+    left_mini = MiniNode.new([], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], 0, "c")
+    right_node = TreeNode.new([right_mini])
+
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini])
+
+    root_mini2 = MiniNode.new([], [], 1, "e")
+    root_node2 = TreeNode.new([root_mini2])
+
+
+    assert_equal(1, root_node.minis.length)
+    root_node.mergeNode(root_node2)
+    assert_equal(2, root_node.minis.length)
+
+    assert_equal(%w[a b c e], root_node.to_a)
+  end
+
+  def test_merge_node_with_multiple_minis
+    left_mini = MiniNode.new([], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], 0, "c")
+    right_node = TreeNode.new([right_mini])
+
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini])
+
+    root_mini2 = MiniNode.new([], [], 1, "e")
+    root_node2 = TreeNode.new([root_mini, root_mini2])
+
+    
+    assert_equal(1, root_node.minis.length)
+    new_tree = root_node.merge_node(root_node2)
+    assert_equal(2, new_tree.minis.length)
+    
+  
+    assert_equal(%w[a b c e], new_tree.to_a)
+  end
+
+  def test_merge_node_with_nil    
+    extra_mini = MiniNode.new([], [], 0, nil)
+    extra_node = TreeNode.new([extra_mini])
+    
+    root_mini = MiniNode.new([], [], 0, "b")
+    root_node = TreeNode.new([root_mini])
+
+    root_node.merge_node(extra_node)
+    assert_equal([nil], root_node.to_a)
+  end
+
+  def test_sanity_check
+    
+    left_mini = MiniNode.new([], [], 0, "a")
+    left_node = TreeNode.new([left_mini])
+
+    right_mini = MiniNode.new([], [], 0, "c")
+    right_node = TreeNode.new([right_mini])
+    
+    extra_mini = MiniNode.new([], [], 1, "d")
+    
+    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
+    root_node = TreeNode.new([root_mini, extra_mini])
+
+    assert_equal(%w[a b c d], root_node.to_a)
+  end
+    
+
+    
+    
+
 
     
 end

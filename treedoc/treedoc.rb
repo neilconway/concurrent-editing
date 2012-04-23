@@ -34,12 +34,39 @@ class MiniNode
       return false
     end
   end
+
+  def mini_merge(min)
+    if (self.left[0] != nil)
+       left_branch = self.left[0].merge_node(min.left[0])
+    elsif ((self.left[0] == nil) and (min.left[0] == nil))
+      left_branch = []
+    else
+      left_branch = min.left[0].copy_tree()
+    end
+    
+    if (self.right[0] != nil)
+      right_branch = self.right[0].merge_node(min.right[0])
+    elsif ((self.right[0] == nil) and (min.right[0] == nil))
+      right_branch = []
+    else
+      right_branch = min.right[0].copy_tree()
+    end
+    
+    if self.atom == nil or min.atom == nil
+      new_atom = nil
+    else
+      new_atom = self.atom
+    end
+    return MiniNode.new([left_branch], [right_branch], self.dis, new_atom)
+  end
+        
 end
 
 class TreeNode
   include Enumerable
   
   attr_reader :minis
+  attr_writer :minis
   
   def initialize(m)
     @minis = m
@@ -53,6 +80,11 @@ class TreeNode
       m.each(&blk)
     end
   end
+
+  def copy_tree()
+    return TreeNode.new(self.minis)
+  end
+
 
   def right_child()
     return self.minis[minis.length - 1].right[0]
@@ -238,30 +270,86 @@ class TreeNode
   end
 
   
-  def mergeNode(n)
-    myMinis = self.minis
+  def merge_node(tree)
+  
+    if (tree == nil)
+      return self.copy_tree()
+    end
     
+    newMinis = []
+    disams = []
+
+    self.minis.each do |m|
+      tree.minis.each do |n|
+        if (m.dis == n.dis)
+          newMinis << m.mini_merge(n)
+          disams << m.dis
+        end
+      end
+    end
+
+    self.minis.each do |m|
+      if not disams.include?(m.dis)
+        newMinis << m
+        disams << m.dis
+      end
+    end
+
+    tree.minis.each do |m|
+      if not disams.include?(m.dis)
+        newMinis << m
+        disams << m.dis
+      end
+    end
     
-    return newNode
+    return TreeNode.new(newMinis)
   end
+  
+          
+          
+          
+  
 
 
   #Assuming t is the rootnode of tree we want to merge with
   def merge(root)
+    # for each tree node
+    #   if elements with the same disambiguators are the same
+    #      Do nothing
+    #   if corresponding element with same disam is nil
+    #      update returned value to nil
+    #   if there is an element with different disambiguator
+    #      add new mini (with diff disam) to returned tree node
     
+
+    # How do we visit all tree-nodes?
     
-    root.minis.each do |mini|
-     if self.minis.include?(mini)
-       #do nothing>
-     else
-       self.minis << mini
-     end
-    end
+    # Start with roots.  
+    # Merge based on semantics above
+    # for each of those mini-nodes, 
+    
+  #  if (root.has_no_children() and self.has_no_children())
+  #    return self.mergeNode(root)
+  #  else
+  #    for 
+
+   # root.minis.each do |mini|
+   #  self.minis.each do |s|
+   #     if 
+   #  if self.minis.include?(mini)
+   #    #do nothing>
+   #  else
+   #    self.minis << mini
+   #  end
+   # end
     
     
   end
   
 end   
+
+
+
 
 
 class TreedocL < Bud::Lattice
