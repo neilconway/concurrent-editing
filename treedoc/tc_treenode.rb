@@ -23,20 +23,6 @@ class TreeNodeTest < Test::Unit::TestCase
 
   end
 
-  def test_right_child_left_child
-    left_mini = MiniNode.new([], [], 0, "a")
-    left_node = TreeNode.new([left_mini])
-
-    right_mini = MiniNode.new([], [], 0, "c")
-    right_node = TreeNode.new([right_mini])
-
-    root_mini = MiniNode.new([left_node], [right_node], 0, "b")
-    root_node = TreeNode.new([root_mini])
-
-    assert_equal(left_node, root_node.left_child())
-    assert_equal(right_node, root_node.right_child())
-  end
-
   def test_find_index_of_mini
     mini_1 = MiniNode.new([], [], 90, "a")
     mini_2 = MiniNode.new([], [], 100, "b")
@@ -238,14 +224,7 @@ class TreeNodeTest < Test::Unit::TestCase
     
     assert_equal(["f"], far_left_node.minis[0].right[0].minis[0].right[0].to_a)
   end
-  
-  def test_mini_has_no_children
-    left_mini = MiniNode.new([], [], 0, "a")
-    
-    assert_equal(true, left_mini.has_no_children())
-  end
 
-  
   def test_find_mini
     left_mini = MiniNode.new([], [], 0, "a")
     left_node = TreeNode.new([left_mini])
@@ -321,10 +300,10 @@ class TreeNodeTest < Test::Unit::TestCase
 
 
     assert_equal(1, root_node.minis.length)
-    root_node.mergeNode(root_node2)
-    assert_equal(2, root_node.minis.length)
+    newTree = root_node.merge_node(root_node2)
+    assert_equal(2, newTree.minis.length)
 
-    assert_equal(%w[a b c e], root_node.to_a)
+    assert_equal(%w[a b c e], newTree.to_a)
   end
 
   def test_merge_node_with_multiple_minis
@@ -356,8 +335,8 @@ class TreeNodeTest < Test::Unit::TestCase
     root_mini = MiniNode.new([], [], 0, "b")
     root_node = TreeNode.new([root_mini])
 
-    root_node.merge_node(extra_node)
-    assert_equal([nil], root_node.to_a)
+    newTree = root_node.merge_node(extra_node)
+    assert_equal([nil], newTree.to_a)
   end
 
   def test_sanity_check

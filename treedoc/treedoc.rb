@@ -27,14 +27,6 @@ class MiniNode
     end
   end
 
-  def has_no_children()
-    if self.right == [] and self.left == []
-      return true
-    else
-      return false
-    end
-  end
-
   def mini_merge(min)
     if (self.left[0] != nil)
        left_branch = self.left[0].merge_node(min.left[0])
@@ -84,15 +76,6 @@ class TreeNode
   def copy_tree()
     return TreeNode.new(self.minis)
   end
-
-
-  def right_child()
-    return self.minis[minis.length - 1].right[0]
-  end
-  
-  def left_child()
-    return self.minis[0].left[0]
-  end
   
   def find_index_of_mini(dis)
     self.minis.each do |mini|
@@ -120,8 +103,6 @@ class TreeNode
     end
   end
   
-  
-
   def check_empty_left()
     if self.minis[0].left[0] == nil
       return true
@@ -157,8 +138,6 @@ class TreeNode
     end
   end
   
-
-  #XXX: should not be minis[0]
   def insert_before(path, atom)
     new_mini = MiniNode.new([],[], nil, atom)
     new_node = TreeNode.new([new_mini])
@@ -183,44 +162,7 @@ class TreeNode
       farthestLeftNode.minis[0].left[0] = new_node
     end
   end 
-
-  def has_no_children?()
-    self.minis.each do |mini|
-      if mini.left[0] != nil or mini.right[0] != nil
-        return false
-      end
-    end
-    return true
-  end
-
-
-  def has_one_child()
-    if self.minis[0].left == [] and self.minis[self.minis.length - 1].right != []
-      return true
-    elsif self.minis[0].left != [] and self.minis[self.minis.length - 1].right == []
-      return true
-    else
-      return false
-    end
-  end 
-    
-
-  def is_single()
-    if self.minis.length == 1
-      return true
-    else
-      return false
-    end
-  end
-
-
-  def find_direct_parent(path)
-    child = self.find_tree_node(path)
-    path.pop
-    path.pop
-    return self.find_tree_node(path)
-  end
-    
+   
   def find_mini(path)
     my_tree_node = self.find_tree_node(path)
     temp = path[path.length - 1]
@@ -229,49 +171,12 @@ class TreeNode
     return my_tree_node.minis[index]
   end
  
-
- # Neil, if you are reading this, I think this delete method is too simple...
- # But I'm going to wait until after quals to ask you about it :D
   def delete(path)
     mini_to_delete = self.find_mini(path)
     mini_to_delete.atom = nil
   end
-    
-
-# Beginning of deletion method when I thought we had to modify the tree
-# structure... 
-  def delete_old(path)
-    reference_node = self.find_tree_node(path)
-    temp = path.pop
-    disam = temp[1]
-    mini_index = reference_node.find_index_of_mini(disam)
-    mini_to_delete = reference_node.minis[mini_index]
-    temp2 = path.pop
-    disam2 = temp2[1]
-    path.pop
-    parent_node = self.find_tree_node(path)
-    
-    parent_mini_index = parent_node.find_index_of_mini(disam2)
-    parent_mini = parent_node.minis[parent_mini_index]
-
-    if mini_to_delete.has_no_children()
-      if reference_node.is_single()
-        
-        if parent_mini.left[0] = reference_node
-          parent_mini.left[0] = nil
-        elsif parent_mini.right[0] = reference_node
-          parent_mini.right[0] = nil
-        end
-      
-      else
-        reference_node.minis.delete(mini_to_delete)
-      end
-    end
-  end
-
-  
+ 
   def merge_node(tree)
-  
     if (tree == nil)
       return self.copy_tree()
     end
@@ -303,49 +208,7 @@ class TreeNode
     end
     
     return TreeNode.new(newMinis)
-  end
-  
-          
-          
-          
-  
-
-
-  #Assuming t is the rootnode of tree we want to merge with
-  def merge(root)
-    # for each tree node
-    #   if elements with the same disambiguators are the same
-    #      Do nothing
-    #   if corresponding element with same disam is nil
-    #      update returned value to nil
-    #   if there is an element with different disambiguator
-    #      add new mini (with diff disam) to returned tree node
-    
-
-    # How do we visit all tree-nodes?
-    
-    # Start with roots.  
-    # Merge based on semantics above
-    # for each of those mini-nodes, 
-    
-  #  if (root.has_no_children() and self.has_no_children())
-  #    return self.mergeNode(root)
-  #  else
-  #    for 
-
-   # root.minis.each do |mini|
-   #  self.minis.each do |s|
-   #     if 
-   #  if self.minis.include?(mini)
-   #    #do nothing>
-   #  else
-   #    self.minis << mini
-   #  end
-   # end
-    
-    
-  end
-  
+  end 
 end   
 
 
