@@ -1,6 +1,19 @@
 require "rubygems"
 require "bud"
 
+class User
+
+  attr_reader :root
+  attr_writer :root
+  attr_reader :dis
+
+  def initialize(r, d)
+    @root = r
+    @dis = d
+  end
+end
+
+
 class MiniNode
   include Enumerable
   
@@ -138,8 +151,8 @@ class TreeNode
     end
   end
   
-  def insert_before(path, atom)
-    new_mini = MiniNode.new([],[], nil, atom)
+  def insert_before(path, atom, dis)
+    new_mini = MiniNode.new([],[], dis, atom)
     new_node = TreeNode.new([new_mini])
     referenceNode = self.find_tree_node(path)
 
@@ -151,8 +164,8 @@ class TreeNode
     end
   end
   
-  def insert_after(path, atom)
-    new_mini = MiniNode.new([],[], nil, atom)
+  def insert_after(path, atom, dis)
+    new_mini = MiniNode.new([],[], dis, atom)
     new_node = TreeNode.new([new_mini])
     referenceNode = self.find_tree_node(path)
     if referenceNode.check_empty_right()
