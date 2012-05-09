@@ -40,7 +40,7 @@ class MiniNode
   end
 
   def mini_merge(min)
-    if (self.left[0] != nil)
+    if self.left[0] != nil
        left_branch = self.left[0].merge_node(min.left[0])
     elsif ((self.left[0] == nil) and (min.left[0] == nil))
       left_branch = []
@@ -48,7 +48,7 @@ class MiniNode
       left_branch = min.left[0].copy_tree
     end
 
-    if (self.right[0] != nil)
+    if self.right[0] != nil
       right_branch = self.right[0].merge_node(min.right[0])
     elsif ((self.right[0] == nil) and (min.right[0] == nil))
       right_branch = []
@@ -56,7 +56,7 @@ class MiniNode
       right_branch = min.right[0].copy_tree
     end
 
-    if self.atom == nil or min.atom == nil
+    if self.atom.nil? or min.atom.nil?
       new_atom = nil
     else
       new_atom = self.atom
@@ -68,13 +68,11 @@ end
 class TreeNode
   include Enumerable
 
-  attr_reader :minis
-  attr_writer :minis
+  attr_accessor :minis
 
   def initialize(m)
     @minis = m
   end
-
 
   # Invokes the block for each atom in the tree, doing an in-order traversal
   # according to the treedoc semantics.
@@ -166,7 +164,7 @@ class TreeNode
     new_mini = MiniNode.new([],[], dis, atom)
     new_node = TreeNode.new([new_mini])
     referenceNode = self.find_tree_node(path)
-    if referenceNode.check_empty_right()
+    if referenceNode.check_empty_right
       referenceNode.minis[minis.length - 1].right[0] = new_node
     else
       farthestLeftNode = referenceNode.minis[minis.length - 1].right[0].find_farthest_left
@@ -197,7 +195,7 @@ class TreeNode
 
     self.minis.each do |m|
       tree.minis.each do |n|
-        if (m.dis == n.dis)
+        if m.dis == n.dis
           newMinis << m.mini_merge(n)
           disams << m.dis
         end
