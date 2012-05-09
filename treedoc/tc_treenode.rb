@@ -1,12 +1,10 @@
 require './test_common'
 require 'rubygems'
 require 'bud'
-#require 'minitest/autorun'
 require './treedoc'
 
 
-class TreeNodeTest < Test::Unit::TestCase
-
+class TreeNodeTest < MiniTest::Unit::TestCase
   def test_basic_triangle
     left_mini = MiniNode.new([], [], 0, "a")
     left_node = TreeNode.new([left_mini])
@@ -20,7 +18,6 @@ class TreeNodeTest < Test::Unit::TestCase
     assert_equal(%w[a b c], root_node.to_a)
     assert_equal(%w[a c], root_node.select{|a| a != "b"})
     assert_equal(true, root_node.all?{|a| %w[a b c].include? a})
-
   end
 
   def test_find_index_of_mini
@@ -415,9 +412,4 @@ class TreeNodeTest < Test::Unit::TestCase
     newTree = bob.root.merge_node(billy.root)
     assert_equal([nil, "b", nil], newTree.to_a)
   end
-
-
-
-    
 end
-
