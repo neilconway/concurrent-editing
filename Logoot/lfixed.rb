@@ -13,6 +13,7 @@ class FixedLattice < Bud::Lattice
     return self if i_val.nil?
     return FixedLattice.new(i_val)
   end
+
 end
 
 
