@@ -76,7 +76,39 @@ class TestRLmap < Test::Unit::TestCase
 		rlm = RecursiveLmap.new(line_id, text)
 		m = rlm.create()
 		assert_equal(m.key?(t1).reveal, true)
+
+		pp = PrettyPrinter.new()
+		pp.printDocument(m)
 	end
+
+
+
+
+	def test_print
+		t1 = Triple.new(1,1,1)
+		t2 = Triple.new(2,2,2)
+		t3 = Triple.new(3,3,3)
+		t4 = Triple.new(3,4,4)
+		line_id1 = [t1]
+		line_id2 = [t2]
+		line_id3 = [t1, t3]
+		line_id4 = [t1, t4]
+		text1 = "first line"
+		text2 = "fourth line"
+		text3 = "second line"
+		text4 = "third line"
+		rlm = RecursiveLmap.new(line_id1, text1)
+		m = rlm.create()
+		#m.reveal.printDocument()
+		m = m.merge(RecursiveLmap.new(line_id2, text2).create())
+		m = m.merge(RecursiveLmap.new(line_id3, text3).create())
+		m = m.merge(RecursiveLmap.new(line_id4, text4).create())
+
+		pp = PrettyPrinter.new()
+		pp.printDocument(m)
+	end
+
+
 end
 
 class SimpleLmap
@@ -130,9 +162,72 @@ class TestLogootLattice <Test::Unit::TestCase
 
 		secondLevel = i.m1.current_value.at(t1)
 		assert_equal(secondLevel.key?(t3).reveal, true)
+
+		#pp = PrettyPrinter.new()
+		#pp.printDocument(i.m1.current_value)
 	end
 
 	# More tests to come.
+
+	def test2
+		i = SimpleLmap.new
+		t1 = Triple.new(1,1,1)
+		t2 = Triple.new(2,2,2)
+		line_id1 = [t1]
+		line_id2 = [t2]
+		text1 = "foo"
+		text2 = "bar"
+
+		rlm1 = RecursiveLmap.new(line_id1, text1)
+		r1 = rlm1.create()
+		i.m3 <+ r1
+		rlm2 = RecursiveLmap.new(line_id2, text2)
+		r2 = rlm2.create()
+		i.m2 <+ r2
+		i.tick
+
+		# At this point we have the document:
+		# foo
+		# bar
+		# We will now try to concurrently insert
+		# something between foo and bar at 2 different
+		# replicas.
+
+		t3 = Triple.new(3, 4, 1)
+		t4 = Triple.new(3, 5, 1)
+		line_id3 = [t1, t3]
+		line_id4 = [t1, t4]
+		text3 = "baz"
+		text4 = "buzz"
+
+		rlm3 = RecursiveLmap.new(line_id3, text3).create()
+		rlm4 = RecursiveLmap.new(line_id4, text4).create()
+		i.m2 <+ rlm3
+		i.m2 <+ rlm4
+		i.tick
+
+		assert_equal(i.m1.current_value.key?(t1).reveal, true)
+		assert_equal(i.m1.current_value.key?(t2).reveal, true)
+		assert_equal(i.m1.current_value.key?(t3).reveal, false)
+		assert_equal(i.m1.current_value.key?(t4).reveal, false)
+
+		secondLevel = i.m1.current_value.at(t1)
+
+		assert_equal(secondLevel.key?(t3).reveal, true)
+		assert_equal(secondLevel.key?(t4).reveal, true)
+
+		pp = PrettyPrinter.new()
+		pp.printDocument(i.m1.current_value)
+
+	end
+
+	def test3
+
+
+
+
+	end
+
 end
 
 

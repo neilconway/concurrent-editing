@@ -58,5 +58,25 @@ class RecursiveLmap
     end
     return rlmap
   end
-
 end
+
+
+class PrettyPrinter
+
+  def initialize()
+  end
+
+  def printDocument(lmap)
+    sortedKeys = lmap.reveal.keys.sort
+    for key in sortedKeys
+      if key == Triple.new(-1,-1,-1)
+        p lmap.reveal.values_at(key)[0].reveal
+        next
+      end
+      nextLmap = lmap.reveal[key]
+      self.printDocument(nextLmap)
+    end
+  end
+end
+
+
