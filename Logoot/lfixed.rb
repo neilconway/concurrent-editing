@@ -10,7 +10,10 @@ class FixedLattice < Bud::Lattice
 
   def merge(i)
   	i_val = i.reveal
-    return self if i_val.nil?
+  	return self if i_val.nil?
+  	if i_val != @v and @v != nil
+  		raise Bud::Error, "Cannot change fixed lattice. input = #{i.inspect}"
+  	end
     return FixedLattice.new(i_val)
   end
 

@@ -35,8 +35,12 @@ class TestLFixed < Test::Unit::TestCase
 		
 		assert_equal(line1, i.holder1.current_value.reveal)
 		assert_equal(line2, i.holder2.current_value.reveal)
-		i.m1 <+ FixedLattice.new("this should change")
-		i.tick
-		assert_equal("this should change", i.holder1.current_value.reveal)
+
+		i.m1 <+ FixedLattice.new("this should not change")
+		
+		assert_raise(Bud::Error) do
+			i.tick
+		end
+
 	end
 end
