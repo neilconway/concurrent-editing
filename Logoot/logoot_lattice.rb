@@ -8,10 +8,9 @@ class RecursiveLmap
   attr_reader :text
   attr_accessor :lmap
   
-  def initialize(line_id, text, lmap={})
+  def initialize(line_id, text)
     @line_id = line_id
     @text = text
-    @lmap = lmap
   end
   
   def create
