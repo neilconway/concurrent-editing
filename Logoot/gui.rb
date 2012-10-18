@@ -4,18 +4,45 @@ require './logoot_lattice'
 require 'rubygems'
 require './lfixed'
 require 'pp'
+require './latticeDocProtocol'
+
+class Client
+  include Bud
+  include LatticeDocProtocol
+  
+  state do
+    lmap :m
+    @server = "localhost:12345"
+  end
+
+  bootstrap do
+    connect <~ [[@server, [@site_id]]]
+  end
+
+  bloom do
+    mcast <~ [[@server, [m]]]
+    m <= mcast.payloads
+  end
+end
+
 
 class LatticeDocGUI
+  include Bud
 
   attr_accessor :lmap
   attr_accessor :site_id
 
-  def initialize(lmap, site_id)
-    @lmap = lmap
+  def initialize(site_id, server)
+    @lmap = RecursiveLmap.new([[-1,-1,-1]], "begin document").create()
     @site_id = site_id
+    @server = server
   end
 
   def run
+    c = Client.new()
+    c.m <+ @lmap
+    c.tick
+
     prp = PrettyPrinter.new()
 
     listStore = Gtk::ListStore.new(Array, String, String)
@@ -57,7 +84,7 @@ class LatticeDocGUI
       else
         temp = oldID.clone
       end
-      newID = prp.getNewID(temp, 5)
+      newID = prp.getNewID(temp, Integer(@site_id))
       dump = PP.pp(newID, "")
       listStore.set_value(newRow, 2, dump)
       listStore.set_value(newRow, 0, newID)
@@ -65,6 +92,8 @@ class LatticeDocGUI
       listStore.set_value(newRow, 1, myText)
       rlm = RecursiveLmap.new(newID, myText).create()
       @lmap = @lmap.merge(rlm)
+      c.m <+ @lmap
+      c.tick
       p @lmap
       prp.printDocument(@lmap)
     end
@@ -73,6 +102,8 @@ class LatticeDocGUI
       id = listStore.get_value(iter,0)
       rlm = RecursiveLmap.new(id, -1 ).create()
       @lmap = @lmap.merge(rlm)
+      c.m <+ @lmap
+      c.tick
       treeView1.model.remove(iter)
     end
 
@@ -84,4 +115,9 @@ class LatticeDocGUI
   end
 end
 
+
+server = (ARGV.length == 2) ? ARGV[1] : "localhost:12345"
+puts "Server address: #{server}"
+program = LatticeDocGUI.new(ARGV[0], server)
+program.run
 
