@@ -20,7 +20,7 @@ class Client
   end
 
   bloom do
-    mcast <~ [[@server, [m]]]
+    mcast <~ [[@server, m]]
     m <= mcast.payloads
   end
 end

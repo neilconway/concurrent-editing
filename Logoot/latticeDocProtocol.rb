@@ -1,6 +1,6 @@
 module LatticeDocProtocol
   state do
-    channel :mcast
+    channel :mcast, [:@address] => [:val]
     channel :connect
   end
 
