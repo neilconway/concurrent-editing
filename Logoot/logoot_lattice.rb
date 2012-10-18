@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'bud'
 require './lfixed'
+require 'pp'
 
 class RecursiveLmap
   
@@ -23,12 +24,16 @@ class RecursiveLmap
     end
     return rlmap
   end
+
 end
 
 
 class PrettyPrinter
+
+  attr_accessor :path
   
   def initialize
+    @path = []
   end
   
   def printDocument(lmap)
@@ -44,6 +49,21 @@ class PrettyPrinter
       self.printDocument(nextLmap)
     end
   end
+
+
+  def getNewID(line_id, site_id)
+    if line_id == false:
+      return [[rand(100), site_id, Time.now.sec], [-1,-1, -1]]
+    else
+      line_id.pop
+      newID = line_id.concat([[rand(100), site_id, Time.now.sec]])
+      newID = newID.concat([[-1,-1,-1]]) 
+      puts "new id"
+      pp newID
+      return newID
+    end
+  end
+
 end
 
 
