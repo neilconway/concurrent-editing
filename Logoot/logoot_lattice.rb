@@ -52,7 +52,7 @@ class PrettyPrinter
 
 
   def getNewID(line_id, site_id)
-    if line_id == false:
+    if line_id == false
       return [[rand(100), site_id, Time.now.sec], [-1,-1, -1]]
     else
       line_id.pop
