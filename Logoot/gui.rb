@@ -5,6 +5,15 @@ require 'rubygems'
 require './lfixed'
 require 'pp'
 
+class CustomCellRend < Gtk::CellRendererText
+  def initialize
+    super
+    self.text = ""
+  end
+
+end
+
+
 class LatticeDocGUI
 
   attr_accessor :lmap
@@ -30,15 +39,15 @@ class LatticeDocGUI
     firstRow = listStore.append
     treeView1.selection.mode = Gtk::SELECTION_SINGLE
     renderer = Gtk::CellRendererText.new
-
-    col2 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 0)
+    customRenderer = CustomCellRend.new
+    col2 = Gtk::TreeViewColumn.new("Position ID", customRenderer, :text => 0)
     #treeView1.append_column(col2)
 
 
     col = Gtk::TreeViewColumn.new("Document", renderer, :text => 1)
     treeView1.append_column(col)
     
-    col3 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 2)
+    col3 = Gtk::TreeViewColumn.new("Position ID- String", renderer, :text => 2)
     treeView1.append_column(col3)
 
     #beforeButton = Gtk::Button.new("Insert Before")
@@ -53,6 +62,7 @@ class LatticeDocGUI
 
     iter = nil
     #iterPrev = nil
+
 
     treeView1.signal_connect("row-activated") do |view, path, column|
       iter = treeView1.model.get_iter(path)
@@ -74,13 +84,17 @@ class LatticeDocGUI
 
       newRow = listStore.insert_after(iter)
       oldID = listStore.get_value(iter, 0)
-      newID = prp.getNewID(oldID, 5)
+      if oldID == false
+        temp = false
+      else
+        temp = oldID.clone
+      end
+      newID = prp.getNewID(temp, 5)
       dump = PP.pp(newID, "")
       listStore.set_value(newRow, 2, dump)
       listStore.set_value(newRow, 0, newID)
       myText = entry.text
       listStore.set_value(newRow, 1, myText)
-
       rlm = RecursiveLmap.new(newID, myText).create()
       p rlm
       @lmap.merge(rlm)
