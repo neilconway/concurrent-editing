@@ -6,28 +6,49 @@ require './lfixed'
 require 'pp'
 require './latticeDocProtocol'
 
-class Client
-  include Bud
-  include LatticeDocProtocol
-  
-  state do
-    lmap :m
-    @server = "localhost:12345"
-  end
+#class Client 
+#  include Bud
+#  include LatticeDocProtocol
+#  
+#  state do
+#    lmap :m
+#    @server = "localhost:12345"
+#  end#
 
-  bootstrap do
-    connect <~ [[@server, [@site_id]]]
-  end
+#  bootstrap do
+#    connect <~ [[@server, [@site_id]]]
+#  end
 
-  bloom do
-    mcast <~ [[@server, m]]
-    m <= mcast.payloads
-  end
-end
+#  bloom do
+#    mcast <~ [[@server, m, @site_id]]
+#    m <= mcast.payloads
+#  end
+#end
 
 
 class LatticeDocGUI
   include Bud
+
+
+
+  class Client 
+    include Bud
+    include LatticeDocProtocol
+    
+    state do
+      lmap :m
+      @server = "localhost:12345"
+    end
+
+    bootstrap do
+      connect <~ [[@server, [@site_id]]]
+    end
+
+    bloom do
+      mcast <~ [[@server, m, @site_id]]
+      m <= mcast.payloads
+    end
+  end
 
   attr_accessor :lmap
   attr_accessor :site_id
@@ -94,8 +115,17 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
-      p @lmap
+     
+      p "OLD"
       prp.printDocument(@lmap)
+      @lmap = @lmap.merge(c.m.current_value)
+      p "NEW"
+      prp.printDocument(@lmap)
+      #listStore.clear
+      paths = prp.getPaths(@lmap)
+      pp paths
+      #loadDocument(@lmap, listStore, paths.reverse)
+      #p @lmap
     end
 
     deleteButton.signal_connect("clicked") do |w|
@@ -104,7 +134,12 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
+      p c.m.current_value.reveal
       treeView1.model.remove(iter)
+      @lmap = @lmap.merge(c.m.current_value)
+      #listStore.clear
+      #paths = prp.getPaths(@lmap)
+      #loadDocument(@lmap, listStore, paths.reverse)
     end
 
     window = Gtk::Window.new("LatticeDoc")
@@ -112,6 +147,25 @@ class LatticeDocGUI
     window.add(vbox)
     window.show_all
     Gtk.main
+  end
+
+  #paths in reverse order
+  def loadDocument(lmap, treestore, paths)
+    sortedKeys = lmap.reveal.keys.sort
+    for key in sortedKeys
+      if key == [-1,-1,-1]
+        if lmap.reveal.values_at(key)[0].reveal != -1
+          parent = treestore.append
+          curPath = paths.pop
+          parent.set_value(0, curPath)
+          parent.set_value(1, lmap.reveal.values_at(key)[0].reveal)
+          parent.set_value(2, PP.pp(curPath, ""))
+        end
+        next
+      end
+      nextLmap = lmap.reveal[key]
+      loadDocument(nextLmap, treestore, paths)
+    end
   end
 end
 
