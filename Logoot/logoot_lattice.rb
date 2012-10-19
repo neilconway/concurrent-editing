@@ -64,6 +64,29 @@ class PrettyPrinter
     end
   end
 
+  def getPaths(lmap)
+    def helper (lmap, seen)
+      sortedKeys = lmap.reveal.keys.sort
+      if sortedKeys.include?([-1,-1,-1])
+        rtn = [seen]
+      else
+        rtn = []
+      end
+      for key in sortedKeys
+        if key == [-1,-1,-1]
+          next
+        end
+        seen2 = seen.clone
+        seen2 << key
+        for x in helper(lmap.reveal[key], seen2)
+          rtn << x
+        end
+      end
+      return rtn
+    end
+    return helper(lmap, [])
+  end
+
 end
 
 
