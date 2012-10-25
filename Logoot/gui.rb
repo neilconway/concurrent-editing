@@ -6,49 +6,32 @@ require './lfixed'
 require 'pp'
 require './latticeDocProtocol'
 
-#class Client 
-#  include Bud
-#  include LatticeDocProtocol
-#  
-#  state do
-#    lmap :m
-#    @server = "localhost:12345"
-#  end#
+class Client 
+  include Bud
+  include LatticeDocProtocol
+  
+  def initialize(server,opts={})
+    @server = server
+    super opts
+  end
 
-#  bootstrap do
-#    connect <~ [[@server, [@site_id]]]
-#  end
+  state do
+    lmap :m
+  end
 
-#  bloom do
-#    mcast <~ [[@server, m, @site_id]]
-#    m <= mcast.payloads
-#  end
-#end
+  bootstrap do
+    connect <~ [[@server, [ip_port]]]
+  end
+
+  bloom do 
+    toServer <~ [[@server, ip_port, m]]
+    m <= toHost.payloads
+  end
+end
 
 
 class LatticeDocGUI
   include Bud
-
-
-
-  class Client 
-    include Bud
-    include LatticeDocProtocol
-    
-    state do
-      lmap :m
-      @server = "localhost:12345"
-    end
-
-    bootstrap do
-      connect <~ [[@server, [@site_id]]]
-    end
-
-    bloom do
-      mcast <~ [[@server, m, @site_id]]
-      m <= mcast.payloads
-    end
-  end
 
   attr_accessor :lmap
   attr_accessor :site_id
@@ -60,8 +43,10 @@ class LatticeDocGUI
   end
 
   def run
-    c = Client.new()
-    c.m <+ @lmap
+    p @server
+    p @site_id
+    c = Client.new(@server)
+    #c.m <+ @lmap
     c.tick
 
     prp = PrettyPrinter.new()
@@ -92,8 +77,7 @@ class LatticeDocGUI
 
     treeView1.signal_connect("row-activated") do |view, path, column|
       iter = treeView1.model.get_iter(path)
-      p "Current line id of selection"
-      pp listStore.get_value(iter, 0)
+      p "Selected"
     end
    
     afterButton.signal_connect( "clicked" ) do |w|
@@ -111,19 +95,32 @@ class LatticeDocGUI
       listStore.set_value(newRow, 0, newID)
       myText = entry.text
       listStore.set_value(newRow, 1, myText)
+      
       rlm = RecursiveLmap.new(newID, myText).create()
+      p "TO be merged:"
+      p rlm
+      p "merging"
       @lmap = @lmap.merge(rlm)
+      p @lmap
+      
+      p "old c.m"
+      p c.m
+
+
       c.m <+ @lmap
       c.tick
-     
-      p "OLD"
-      prp.printDocument(@lmap)
-      @lmap = @lmap.merge(c.m.current_value)
-      p "NEW"
-      prp.printDocument(@lmap)
+
+      p "new c.m"
+      p c.m
+
+      #p "OLD"
+      #prp.printDocument(@lmap)
+      #@lmap = @lmap.merge(c.m.current_value)
+      #p "NEW"
+      #p @lmap
       #listStore.clear
-      paths = prp.getPaths(@lmap)
-      pp paths
+      #paths = prp.getPaths(@lmap)
+      #pp paths
       #loadDocument(@lmap, listStore, paths.reverse)
       #p @lmap
     end
