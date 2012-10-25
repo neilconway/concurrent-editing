@@ -97,32 +97,16 @@ class LatticeDocGUI
       listStore.set_value(newRow, 1, myText)
       
       rlm = RecursiveLmap.new(newID, myText).create()
-      p "TO be merged:"
-      p rlm
-      p "merging"
       @lmap = @lmap.merge(rlm)
-      p @lmap
-      
-      p "old c.m"
-      p c.m
-
-
       c.m <+ @lmap
       c.tick
-
-      p "new c.m"
-      p c.m
-
-      #p "OLD"
-      #prp.printDocument(@lmap)
-      #@lmap = @lmap.merge(c.m.current_value)
-      #p "NEW"
-      #p @lmap
-      #listStore.clear
-      #paths = prp.getPaths(@lmap)
-      #pp paths
-      #loadDocument(@lmap, listStore, paths.reverse)
-      #p @lmap
+      @lmap = c.m.current_value
+      listStore.clear
+      paths = prp.getPaths(@lmap)
+      for x in paths
+        x << [-1,-1,-1]
+      end
+      loadDocument(c.m.current_value, listStore, paths.reverse)
     end
 
     deleteButton.signal_connect("clicked") do |w|
@@ -131,12 +115,14 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
-      p c.m.current_value.reveal
       treeView1.model.remove(iter)
-      @lmap = @lmap.merge(c.m.current_value)
-      #listStore.clear
-      #paths = prp.getPaths(@lmap)
-      #loadDocument(@lmap, listStore, paths.reverse)
+      @lmap = c.m.current_value
+      listStore.clear
+      paths = prp.getPaths(@lmap)
+      for x in paths
+        x << [-1,-1,-1]
+      end
+      loadDocument(c.m.current_value, listStore, paths.reverse)
     end
 
     window = Gtk::Window.new("LatticeDoc")

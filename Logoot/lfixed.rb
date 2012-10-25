@@ -11,7 +11,7 @@ class FixedLattice < Bud::Lattice
   
   def merge(i)
     i_val = i.reveal
-    if i_val == @deleteFlag
+    if i_val == @deleteFlag or @v == @deleteFlag
       return FixedLattice.new(@deleteFlag)
     end
     return self if i_val.nil?
