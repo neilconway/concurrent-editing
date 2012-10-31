@@ -15,8 +15,7 @@ class TestRLmap < Test::Unit::TestCase
     textFlag = [-1,-1,-1]
     line_id = [t1, t2, t3, textFlag]
     text = "hello world"
-    rlm = RecursiveLmap.new(line_id, text)
-    m = rlm.create()
+    m = createDocLattice(line_id, text)
     assert_equal(m.key?(t1).reveal, true)
     assert_equal(m.key?(t2).reveal, false)
     secondLevel = m.at(t1)
@@ -30,12 +29,9 @@ class TestRLmap < Test::Unit::TestCase
     text_flag = [-1,-1,-1]
     line_id = [t1, text_flag]
     text = "I love concurrent editing"
-    rlm = RecursiveLmap.new(line_id, text)
-    m = rlm.create()
+    m = createDocLattice(line_id, text)
     assert_equal(m.key?(t1).reveal, true)
-    
-    #pp = PrettyPrinter.new()
-    #pp.printDocument(m)
+    p m 
   end
   
   def test_print
@@ -52,16 +48,17 @@ class TestRLmap < Test::Unit::TestCase
     text2 = "fourth line"
     text3 = "second line"
     text4 = "third line"
-    rlm = RecursiveLmap.new(line_id1, text1)
-    m = rlm.create()
+    m = createDocLattice(line_id1, text1)
     #m.reveal.printDocument()
-    m = m.merge(RecursiveLmap.new(line_id2, text2).create())
-    m = m.merge(RecursiveLmap.new(line_id3, text3).create())
-    m = m.merge(RecursiveLmap.new(line_id4, text4).create())
+    m = m.merge(createDocLattice(line_id2, text2))
+    m = m.merge(createDocLattice(line_id3, text3))
+    m = m.merge(createDocLattice(line_id4, text4))
     
-    pp = PrettyPrinter.new()
-    pp.printDocument(m)
 
+    prt = PrettyPrinter.new()
+    prt.printDocument(m)
+    paths = getPaths(m)
+    pp paths
   end  
 
 end
@@ -93,11 +90,9 @@ class TestLogootLattice <Test::Unit::TestCase
     text1 = "foo"
     text2 = "bar"
     
-    rlm1 = RecursiveLmap.new(line_id1, text1)
-    r1 = rlm1.create()
+    r1 = createDocLattice(line_id1, text1)
     i.m3 <+ r1
-    rlm2 = RecursiveLmap.new(line_id2, text2)
-    r2 = rlm2.create()
+    r2 = createDocLattice(line_id2, text2)
     i.m2 <+ r2
     i.tick
     
@@ -108,8 +103,8 @@ class TestLogootLattice <Test::Unit::TestCase
     line_id3 = [t1, t3, text_flag]
     text3 = "baz"
     
-    rlm3 = RecursiveLmap.new(line_id3, text3)
-    i.m3 <+ rlm3.create()
+    rlm3 = createDocLattice(line_id3, text3)
+    i.m3 <+ rlm3
     i.tick
     
     assert_equal(i.m1.current_value.key?(t1).reveal, true)
@@ -118,9 +113,7 @@ class TestLogootLattice <Test::Unit::TestCase
     
     secondLevel = i.m1.current_value.at(t1)
     assert_equal(secondLevel.key?(t3).reveal, true)
-    
-    #pp = PrettyPrinter.new()
-    #pp.printDocument(i.m1.current_value)
+
   end
   
   def test_concurrent_inserts
@@ -133,11 +126,9 @@ class TestLogootLattice <Test::Unit::TestCase
     text1 = "foo"
     text2 = "bar"
     
-    rlm1 = RecursiveLmap.new(line_id1, text1)
-    r1 = rlm1.create()
+    r1 = createDocLattice(line_id1, text1)
     i.m3 <+ r1
-    rlm2 = RecursiveLmap.new(line_id2, text2)
-    r2 = rlm2.create()
+    r2 = createDocLattice(line_id2, text2)
     i.m2 <+ r2
     i.tick
     
@@ -155,8 +146,8 @@ class TestLogootLattice <Test::Unit::TestCase
     text3 = "baz"
     text4 = "buzz"
     
-    rlm3 = RecursiveLmap.new(line_id3, text3).create()
-    rlm4 = RecursiveLmap.new(line_id4, text4).create()
+    rlm3 = createDocLattice(line_id3, text3)
+    rlm4 = createDocLattice(line_id4, text4)
     i.m2 <+ rlm3
     i.m2 <+ rlm4
     i.tick
@@ -171,8 +162,7 @@ class TestLogootLattice <Test::Unit::TestCase
     assert_equal(secondLevel.key?(t3).reveal, true)
     assert_equal(secondLevel.key?(t4).reveal, true)
     
-    #pp = PrettyPrinter.new()
-    #pp.printDocument(i.m1.current_value)
+
     
   end
 
@@ -189,11 +179,9 @@ class TestLogootLattice <Test::Unit::TestCase
     text1 = "foo"
     text2 = "bar"
     
-    rlm1 = RecursiveLmap.new(line_id1, text1)
-    r1 = rlm1.create()
+    r1 = createDocLattice(line_id1, text1)
     i.m3 <+ r1
-    rlm2 = RecursiveLmap.new(line_id2, text2)
-    r2 = rlm2.create()
+    r2 = createDocLattice(line_id2, text2)
     i.m2 <+ r2
     i.tick
     
@@ -204,8 +192,8 @@ class TestLogootLattice <Test::Unit::TestCase
     text3 = "baz"
     text4 = "buzz"
     
-    rlm3 = RecursiveLmap.new(line_id3, text3).create()
-    rlm4 = RecursiveLmap.new(line_id4, text4).create()
+    rlm3 = createDocLattice(line_id3, text3)
+    rlm4 = createDocLattice(line_id4, text4)
     i.m2 <+ rlm3
     i.tick
     i.m2 <+ rlm4
@@ -221,9 +209,8 @@ class TestLogootLattice <Test::Unit::TestCase
     assert_equal(secondLevel.key?(t3).reveal, true)
     assert_equal(secondLevel.key?(t4).reveal, true)
     
-    #pp = PrettyPrinter.new()
-    #pp.printDocument(i.m1.current_value)
-    
+    prt = PrettyPrinter.new()
+    prt.printDocument(i.m1.current_value)
   end
 
   def test_basic_delete
@@ -232,13 +219,13 @@ class TestLogootLattice <Test::Unit::TestCase
     text_flag = [-1,-1,-1]
     line_id1 = [t1, text_flag]
     text1 = ":D"
-    lattice = RecursiveLmap.new(line_id1, text1).create
+    lattice = createDocLattice(line_id1, text1)
     i.m2 <+ lattice
     i.tick
 
     assert_equal(i.m1.current_value.at(t1).at(text_flag).reveal, ":D")
 
-    delete = RecursiveLmap.new(line_id1, -1).create
+    delete = createDocLattice(line_id1, -1)
     i.m2 <+ delete
     i.tick
     
@@ -256,11 +243,9 @@ class TestLogootLattice <Test::Unit::TestCase
     text1 = "foo"
     text2 = "bar"
     
-    rlm1 = RecursiveLmap.new(line_id1, text1)
-    r1 = rlm1.create()
+    r1 = createDocLattice(line_id1, text1)
     i.m3 <+ r1
-    rlm2 = RecursiveLmap.new(line_id2, text2)
-    r2 = rlm2.create()
+    r2 = createDocLattice(line_id2, text2)
     i.m2 <+ r2
     i.tick
         
@@ -271,8 +256,8 @@ class TestLogootLattice <Test::Unit::TestCase
     text3 = "baz"
     text4 = "buzz"
     
-    rlm3 = RecursiveLmap.new(line_id3, text3).create()
-    rlm4 = RecursiveLmap.new(line_id4, text4).create()
+    rlm3 = createDocLattice(line_id3, text3)
+    rlm4 = createDocLattice(line_id4, text4)
     i.m2 <+ rlm3
     i.m2 <+ rlm4
     i.tick
@@ -289,7 +274,7 @@ class TestLogootLattice <Test::Unit::TestCase
 
     #Will delete buzz
 
-    rlmDelete = RecursiveLmap.new(line_id4, -1).create()
+    rlmDelete = createDocLattice(line_id4, -1)
     
     i.m2 <+ rlmDelete
     i.tick
@@ -321,11 +306,9 @@ class TestLogootLattice <Test::Unit::TestCase
     text1 = "foo"
     text2 = "bar"
     
-    rlm1 = RecursiveLmap.new(line_id1, text1)
-    r1 = rlm1.create()
+    r1 = createDocLattice(line_id1, text1)
     i.m3 <+ r1
-    rlm2 = RecursiveLmap.new(line_id2, text2)
-    r2 = rlm2.create()
+    r2 = createDocLattice(line_id2, text2)
     i.m2 <+ r2
     i.tick
     
@@ -337,20 +320,20 @@ class TestLogootLattice <Test::Unit::TestCase
     text3 = "baz"
     text4 = "buzz"
     
-    rlm3 = RecursiveLmap.new(line_id3, text3).create()
-    rlm4 = RecursiveLmap.new(line_id4, text4).create()
+    rlm3 = createDocLattice(line_id3, text3)
+    rlm4 = createDocLattice(line_id4, text4)
     i.m2 <+ rlm3
     i.m2 <+ rlm4
     i.tick
     
     
-    deleter = RecursiveLmap.new(line_id3, -1).create
+    deleter = createDocLattice(line_id3, -1)
     i.m2 <+ deleter
     i.m3 <+ deleter
     i.tick
     
-    pp = PrettyPrinter.new()
-    pp.printDocument(i.m1.current_value)
+    prt = PrettyPrinter.new()
+    prt.printDocument(i.m1.current_value)
   end
   
 end

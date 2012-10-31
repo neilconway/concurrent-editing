@@ -37,7 +37,7 @@ class LatticeDocGUI
   attr_accessor :site_id
 
   def initialize(site_id, server)
-    @lmap = RecursiveLmap.new([[-1,-1,-1]], "begin document").create()
+    @lmap = createDocLattice([[-1,-1,-1]], "begin document")
     @site_id = site_id
     @server = server
   end
@@ -48,8 +48,6 @@ class LatticeDocGUI
     c = Client.new(@server)
     #c.m <+ @lmap
     c.tick
-
-    prp = PrettyPrinter.new()
 
     listStore = Gtk::ListStore.new(Array, String, String)
     treeView1 = Gtk::TreeView.new(listStore)
@@ -89,20 +87,20 @@ class LatticeDocGUI
       else
         temp = oldID.clone
       end
-      newID = prp.getNewID(temp, Integer(@site_id))
+      newID = getNewID(temp, Integer(@site_id))
       dump = PP.pp(newID, "")
       listStore.set_value(newRow, 2, dump)
       listStore.set_value(newRow, 0, newID)
       myText = entry.text
       listStore.set_value(newRow, 1, myText)
       
-      rlm = RecursiveLmap.new(newID, myText).create()
+      rlm = createDocLattice(newID, myText)
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
       @lmap = c.m.current_value
       listStore.clear
-      paths = prp.getPaths(@lmap)
+      paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
@@ -111,14 +109,14 @@ class LatticeDocGUI
 
     deleteButton.signal_connect("clicked") do |w|
       id = listStore.get_value(iter,0)
-      rlm = RecursiveLmap.new(id, -1 ).create()
+      rlm = createDocLattice(id, -1 )
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
       treeView1.model.remove(iter)
       @lmap = c.m.current_value
       listStore.clear
-      paths = prp.getPaths(@lmap)
+      paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
