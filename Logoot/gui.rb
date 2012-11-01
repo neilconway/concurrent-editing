@@ -63,12 +63,14 @@ class LatticeDocGUI
 
     afterButton = Gtk::Button.new("Insert After")
     deleteButton = Gtk::Button.new("Delete")
+    updateButton = Gtk::Button.new("Refresh")
     entry = Gtk::Entry.new
 
     vbox = Gtk::VBox.new(homogeneous=false, spacing=nil) 
     vbox.pack_start_defaults(treeView1)
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
+    vbox.pack_start_defaults(updateButton)
     vbox.pack_start_defaults(entry)
 
     iter = nil
@@ -79,21 +81,26 @@ class LatticeDocGUI
     end
    
     afterButton.signal_connect( "clicked" ) do |w|
-
-      newRow = listStore.insert_after(iter)
-      oldID = listStore.get_value(iter, 0)
-      if oldID == false or oldID == nil
+      firstID = listStore.get_value(iter, 0)
+      if firstID == false or firstID == nil
         temp = false
       else
-        temp = oldID.clone
+        temp = firstID.clone
       end
-      newID = getNewID(temp, Integer(@site_id))
+      if iter == nil
+        newID = getNewID(temp, Integer(@site_id))
+      else
+        iter.next!
+        secondID = listStore.get_value(iter,0)
+        if secondID == false or secondID == nil
+          temp2 = false
+        else
+          temp2 = secondID.clone
+        end
+        newID = generateNewId(temp, temp2, Integer(@site_id))
+      end
       dump = PP.pp(newID, "")
-      listStore.set_value(newRow, 2, dump)
-      listStore.set_value(newRow, 0, newID)
-      myText = entry.text
-      listStore.set_value(newRow, 1, myText)
-      
+      myText = entry.text     
       rlm = createDocLattice(newID, myText)
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
@@ -122,6 +129,19 @@ class LatticeDocGUI
       end
       loadDocument(c.m.current_value, listStore, paths.reverse)
     end
+
+    updateButton.signal_connect("clicked") do |w|
+      c.tick
+      @lmap = c.m.current_value
+      listStore.clear
+      paths = getPaths(@lmap)
+      for x in paths
+        x << [-1,-1,-1]
+      end
+      loadDocument(c.m.current_value, listStore, paths.reverse)
+
+    end
+
 
     window = Gtk::Window.new("LatticeDoc")
     window.signal_connect("destroy") { Gtk.main_quit }

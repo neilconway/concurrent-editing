@@ -59,7 +59,23 @@ class TestRLmap < Test::Unit::TestCase
     prt.printDocument(m)
     paths = getPaths(m)
     pp paths
-  end  
+  end 
+
+  def test_generate_newIDs
+    t1 = [1,1,1]
+    t2 = [2,2,2]
+    t3 = [3,3,3]
+    t4 = [3,4,4]
+    text_flag = [-1,-1,-1]
+    line_id1 = [t1, text_flag]
+    line_id2 = [t2, text_flag]
+    line_id3 = [t1, t3, text_flag]
+    line_id4 = [t1, t4, text_flag]
+    pp line_id1
+    pp line_id3
+    line_id = generateNewId(line_id1, line_id3, 5)
+    pp line_id 
+  end 
 
 end
 
