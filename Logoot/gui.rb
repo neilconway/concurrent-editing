@@ -75,6 +75,22 @@ class LatticeDocGUI
 
     iter = nil
 
+    ############################################
+    # Push- update code-- causes gui to freeze #
+    ############################################
+    #GLib::Idle.add { c.tick
+    #  @lmap = c.m.current_value
+    #  listStore.clear
+    #  paths = getPaths(@lmap)
+    #  for x in paths
+    #    x << [-1,-1,-1]
+    #  end
+    #  loadDocument(c.m.current_value, listStore, paths.reverse)
+    #  sleep 1}
+    
+
+
+
     treeView1.signal_connect("row-activated") do |view, path, column|
       iter = treeView1.model.get_iter(path)
       p "Selected"
