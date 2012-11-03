@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
+require 'rubygems'
 require 'gtk2'
 require './logoot_lattice'
-require 'rubygems'
 require './lfixed'
-require 'pp'
 require './latticeDocProtocol'
+require 'pp'
 
-class Client 
+class Client
   include Bud
   include LatticeDocProtocol
-  
-  def initialize(server,opts={})
+
+  def initialize(server, opts={})
     @server = server
     super opts
   end
@@ -23,7 +23,7 @@ class Client
     connect <~ [[@server, [ip_port]]]
   end
 
-  bloom do 
+  bloom do
     toServer <~ [[@server, ip_port, m]]
     m <= toHost.payloads
   end
@@ -66,7 +66,7 @@ class LatticeDocGUI
     updateButton = Gtk::Button.new("Refresh")
     entry = Gtk::Entry.new
 
-    vbox = Gtk::VBox.new(homogeneous=false, spacing=nil) 
+    vbox = Gtk::VBox.new(homogeneous=false, spacing=nil)
     vbox.pack_start_defaults(treeView1)
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
@@ -87,7 +87,7 @@ class LatticeDocGUI
     #  end
     #  loadDocument(c.m.current_value, listStore, paths.reverse)
     #  sleep 1}
-    
+
 
 
 
@@ -95,8 +95,8 @@ class LatticeDocGUI
       iter = treeView1.model.get_iter(path)
       p "Selected"
     end
-   
-    afterButton.signal_connect( "clicked" ) do |w|
+
+    afterButton.signal_connect("clicked") do |w|
       firstID = listStore.get_value(iter, 0)
       if firstID == false or firstID == nil
         temp = false
@@ -116,7 +116,7 @@ class LatticeDocGUI
         newID = generateNewId(temp, temp2, Integer(@site_id))
       end
       dump = PP.pp(newID, "")
-      myText = entry.text     
+      myText = entry.text
       rlm = createDocLattice(newID, myText)
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
@@ -155,9 +155,7 @@ class LatticeDocGUI
         x << [-1,-1,-1]
       end
       loadDocument(c.m.current_value, listStore, paths.reverse)
-
     end
-
 
     window = Gtk::Window.new("LatticeDoc")
     window.signal_connect("destroy") { Gtk.main_quit }
@@ -186,9 +184,7 @@ class LatticeDocGUI
   end
 end
 
-
 server = (ARGV.length == 2) ? ARGV[1] : "localhost:12345"
 puts "Server address: #{server}"
 program = LatticeDocGUI.new(ARGV[0], server)
 program.run
-

@@ -17,7 +17,7 @@ def createDocLattice(line_id, text)
 end
 
 def getPaths(lmap)
-  def helper (lmap, seen)
+  def helper(lmap, seen)
     sortedKeys = lmap.reveal.keys.sort
     if sortedKeys.include?(TEXT_FLAG)
       rtn = [seen]
@@ -48,7 +48,7 @@ def getNewID(line_id, site_id)
   else
     line_id.pop
     newID = line_id.concat([[rand(100), site_id, Time.now.sec]])
-    newID = newID.concat([TEXT_FLAG]) 
+    newID = newID.concat([TEXT_FLAG])
     puts "new id"
     pp newID
     return newID
@@ -83,8 +83,6 @@ def generateNewId(line_id1, line_id2, site_id)
   end
 end
 
-
-
 class PrettyPrinter
   def printDocument(lmap)
     sortedKeys = lmap.reveal.keys.sort
@@ -100,6 +98,3 @@ class PrettyPrinter
     end
   end
 end
-
-
-
