@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'rubygems'
+require 'backports'
 require 'bud'
 require 'gtk2'
 require 'pp'
@@ -87,12 +88,9 @@ class LatticeDocGUI
     #  loadDocument(c.m.current_value, listStore, paths.reverse)
     #  sleep 1}
 
-
-
-
     treeView1.signal_connect("row-activated") do |view, path, column|
       iter = treeView1.model.get_iter(path)
-      p "Selected"
+      puts "Selected: #{path.to_s}"
     end
 
     afterButton.signal_connect("clicked") do |w|

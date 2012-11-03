@@ -1,6 +1,5 @@
 require './test_common'
 require 'logoot_lattice'
-require 'lfixed'
 
 class TestRLmap < Test::Unit::TestCase
   def testMakeRecursiveLmap

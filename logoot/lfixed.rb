@@ -3,6 +3,7 @@ require 'bud'
 
 class FixedLattice < Bud::Lattice
   wrapper_name :lfixed
+
   DELETE_FLAG = -1
   
   def initialize(i=nil)
