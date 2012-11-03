@@ -68,9 +68,9 @@ def generateNewId(line_id1, line_id2, site_id)
     line_id2.pop
     for i in (0..size1)
       if line_id1[i] != line_id2[i]
-        randomNum = (0 .. line_id2[i][0]).to_a.choice
+        randomNum = (0 .. line_id2[i][0]).to_a.sample
         if randomNum == line_id2[i][0]
-          modified_time = (0 .. line_id2[i][2]).to_a.choice
+          modified_time = (0 .. line_id2[i][2]).to_a.sample
           newId = line_id1[0..i].concat([[randomNum, site_id, modified_time]])
           newId.concat([TEXT_FLAG])
           return newId

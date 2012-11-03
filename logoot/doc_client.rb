@@ -38,9 +38,9 @@ class LatticeDocGUI
   attr_accessor :site_id
 
   def initialize(site_id, server)
-    @lmap = createDocLattice([[-1,-1,-1]], "begin document")
-    @site_id = site_id
+    @site_id = site_id.to_i
     @server = server
+    @lmap = createDocLattice([[-1,-1,-1]], "begin document")
   end
 
   def run
@@ -52,15 +52,13 @@ class LatticeDocGUI
 
     listStore = Gtk::ListStore.new(Array, String, String)
     treeView1 = Gtk::TreeView.new(listStore)
-    firstRow = listStore.append
     treeView1.selection.mode = Gtk::SELECTION_SINGLE
     renderer = Gtk::CellRendererText.new
-    col2 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 0)
-    col = Gtk::TreeViewColumn.new("Document", renderer, :text => 1)
-    treeView1.append_column(col)
-    col3 = Gtk::TreeViewColumn.new("Position ID- String", renderer, :text => 2)
-    treeView1.append_column(col3)
-
+    col0 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 0)
+    col1 = Gtk::TreeViewColumn.new("Text", renderer, :text => 1)
+    treeView1.append_column(col1)
+    col2 = Gtk::TreeViewColumn.new("Position ID- String", renderer, :text => 2)
+    treeView1.append_column(col2)
 
     afterButton = Gtk::Button.new("Insert After")
     deleteButton = Gtk::Button.new("Delete")
@@ -98,27 +96,26 @@ class LatticeDocGUI
     end
 
     afterButton.signal_connect("clicked") do |w|
-      firstID = listStore.get_value(iter, 0)
+      firstID = listStore.get_value(iter, 0) unless iter.nil?
       if firstID == false or firstID == nil
         temp = false
       else
         temp = firstID.clone
       end
       if iter == nil
-        newID = getNewID(temp, Integer(@site_id))
+        newID = getNewID(temp, @site_id)
       else
         iter.next!
-        secondID = listStore.get_value(iter,0)
+        secondID = listStore.get_value(iter, 0)
         if secondID == false or secondID == nil
           temp2 = false
         else
           temp2 = secondID.clone
         end
-        newID = generateNewId(temp, temp2, Integer(@site_id))
+        newID = generateNewId(temp, temp2, @site_id)
       end
       dump = PP.pp(newID, "")
-      myText = entry.text
-      rlm = createDocLattice(newID, myText)
+      rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
@@ -132,8 +129,8 @@ class LatticeDocGUI
     end
 
     deleteButton.signal_connect("clicked") do |w|
-      id = listStore.get_value(iter,0)
-      rlm = createDocLattice(id, -1 )
+      id = listStore.get_value(iter, 0)
+      rlm = createDocLattice(id, -1)
       @lmap = @lmap.merge(rlm)
       c.m <+ @lmap
       c.tick
