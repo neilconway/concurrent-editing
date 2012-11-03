@@ -1,11 +1,6 @@
 require './test_common'
-require 'rubygems'
-require 'bud'
-require './logoot_lattice'
-require "set"
-require './lfixed'
-
-
+require 'logoot_lattice'
+require 'lfixed'
 
 class TestRLmap < Test::Unit::TestCase
   def testMakeRecursiveLmap

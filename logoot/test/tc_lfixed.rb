@@ -1,7 +1,5 @@
 require './test_common'
-require 'rubygems'
-require 'bud'
-require './lfixed'
+require 'lfixed'
 
 class SimpleLfixed
   include Bud
