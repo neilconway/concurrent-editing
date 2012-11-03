@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'bud'
-require 'lfixed'
 require 'pp'
+require_relative 'lfixed'
 
 TEXT_FLAG = [-1,-1,-1]
 

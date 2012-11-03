@@ -1,7 +1,7 @@
 require 'rubygems'
 require 'bud'
-require './latticeDocProtocol'
-require './lfixed'
+require_relative 'latticeDocProtocol'
+require_relative 'lfixed'
 
 class LatticeDocServer
   include Bud

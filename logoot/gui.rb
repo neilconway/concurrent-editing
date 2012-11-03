@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 require 'rubygems'
 require 'gtk2'
-require './logoot_lattice'
-require './lfixed'
-require './latticeDocProtocol'
 require 'pp'
+require_relative 'logoot_lattice'
+require_relative 'lfixed'
+require_relative 'latticeDocProtocol'
 
 class Client
   include Bud
