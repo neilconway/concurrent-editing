@@ -25,8 +25,8 @@ class Client
   end
 
   bloom do
-    toServer <~ [[@server, ip_port, m]]
-    m <= toHost.payloads
+    to_server <~ [[@server, ip_port, m]]
+    m <= to_host.payloads
   end
 end
 

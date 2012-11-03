@@ -11,7 +11,7 @@ class LatticeDocServer
 
   bloom do
     nodelist <= connect.payloads
-    toHost <~ (toServer * nodelist).pairs {|m,n| [n.key, m.val]}
+    to_host <~ (to_server * nodelist).pairs {|m,n| [n.key, m.val]}
   end
 end
 
