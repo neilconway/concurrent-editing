@@ -48,17 +48,16 @@ class LatticeDocGUI
     p @server
     p @site_id
     c = Client.new(@server)
-    #c.m <+ @lmap
-    c.tick
+    c.run_bg
 
     listStore = Gtk::ListStore.new(Array, String, String)
     treeView1 = Gtk::TreeView.new(listStore)
     treeView1.selection.mode = Gtk::SELECTION_SINGLE
     renderer = Gtk::CellRendererText.new
-    col0 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 0)
+    col0 = Gtk::TreeViewColumn.new("Position ID (Array)", renderer, :text => 0)
     col1 = Gtk::TreeViewColumn.new("Text", renderer, :text => 1)
     treeView1.append_column(col1)
-    col2 = Gtk::TreeViewColumn.new("Position ID- String", renderer, :text => 2)
+    col2 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 2)
     treeView1.append_column(col2)
 
     afterButton = Gtk::Button.new("Insert After")
@@ -115,46 +114,58 @@ class LatticeDocGUI
       dump = PP.pp(newID, "")
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
-      c.m <+ @lmap
-      c.tick
-      @lmap = c.m.current_value
+      c.sync_do {
+        c.m <+ @lmap
+      }
+      c.sync_do {
+        @lmap = c.m.current_value
+      }
       listStore.clear
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
-      loadDocument(c.m.current_value, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.reverse)
+      entry.text = ""
+      entry.focus = true
     end
 
     deleteButton.signal_connect("clicked") do |w|
       id = listStore.get_value(iter, 0)
       rlm = createDocLattice(id, -1)
       @lmap = @lmap.merge(rlm)
-      c.m <+ @lmap
-      c.tick
+      c.sync_do {
+        c.m <+ @lmap
+      }
+      c.sync_do {
+        @lmap = c.m.current_value
+      }
       treeView1.model.remove(iter)
-      @lmap = c.m.current_value
       listStore.clear
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
-      loadDocument(c.m.current_value, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.reverse)
     end
 
     updateButton.signal_connect("clicked") do |w|
-      c.tick
-      @lmap = c.m.current_value
+      c.sync_do {
+        @lmap = c.m.current_value
+      }
       listStore.clear
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
-      loadDocument(c.m.current_value, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.reverse)
     end
 
     window = Gtk::Window.new("LatticeDoc")
-    window.signal_connect("destroy") { Gtk.main_quit }
+    window.signal_connect("destroy") do
+      c.stop
+      Gtk.main_quit
+    end
     window.add(vbox)
     window.show_all
     Gtk.main
