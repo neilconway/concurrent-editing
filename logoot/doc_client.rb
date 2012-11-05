@@ -33,8 +33,6 @@ end
 
 
 class LatticeDocGUI
-  include Bud
-
   attr_accessor :lmap
   attr_accessor :site_id
 
@@ -111,7 +109,6 @@ class LatticeDocGUI
         end
         newID = generateNewId(temp, temp2, @site_id)
       end
-      dump = PP.pp(newID, "")
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
       c.sync_do {
@@ -120,11 +117,11 @@ class LatticeDocGUI
       c.sync_do {
         @lmap = c.m.current_value
       }
-      listStore.clear
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
+      listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
       entry.text = ""
       entry.focus = true
@@ -141,11 +138,11 @@ class LatticeDocGUI
         @lmap = c.m.current_value
       }
       treeView1.model.remove(iter)
-      listStore.clear
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
       end
+      listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
     end
 
@@ -168,7 +165,6 @@ class LatticeDocGUI
     end
     window.add(vbox)
     window.show_all
-    Gtk.main
   end
 
   #paths in reverse order
@@ -191,7 +187,10 @@ class LatticeDocGUI
   end
 end
 
-server = (ARGV.length == 2) ? ARGV[1] : "localhost:12345"
-puts "Server address: #{server}"
-program = LatticeDocGUI.new(ARGV[0], server)
-program.run
+if __FILE__ == $0
+  server = (ARGV.length == 2) ? ARGV[1] : LatticeDocProtocol::DEFAULT_ADDR
+  puts "Server address: #{server}"
+  program = LatticeDocGUI.new(ARGV[0], server)
+  program.run
+  Gtk.main
+end
