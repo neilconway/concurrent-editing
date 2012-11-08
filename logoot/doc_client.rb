@@ -22,20 +22,17 @@ class Client
   end
 
   bootstrap do
-    connect <~ [[@server, [ip_port]]]
+    connect <~ [[@server, ip_port]]
   end
 
   bloom do
     to_server <~ [[@server, ip_port, m]]
-    m <= to_host.payloads
+    m <= to_host {|h| h.val}
   end
 end
 
 
 class LatticeDocGUI
-  attr_accessor :lmap
-  attr_accessor :site_id
-
   def initialize(site_id, server)
     @site_id = site_id.to_i
     @server = server
@@ -43,8 +40,6 @@ class LatticeDocGUI
   end
 
   def run
-    p @server
-    p @site_id
     c = Client.new(@server)
     c.run_bg
 

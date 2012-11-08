@@ -1,8 +1,8 @@
 module LatticeDocProtocol
   state do
-    channel :to_host, [:@address] => [:val]
-    channel :to_server, [:@address] => [:site, :val]
-    channel :connect
+    channel :to_host, [:@addr] => [:val]
+    channel :to_server, [:@addr] => [:source_addr, :val]
+    channel :connect, [:@addr] => [:source_addr]
   end
 
   DEFAULT_ADDR = "localhost:12345"

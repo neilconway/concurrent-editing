@@ -11,7 +11,8 @@ class LatticeDocServer
   state { table :nodelist }
 
   bloom do
-    nodelist <= connect.payloads
+    stdio <~ connect {|c| ["New client: #{c.source_addr}"]}
+    nodelist <= connect {|c| [c.source_addr]}
     to_host <~ (to_server * nodelist).pairs {|m,n| [n.key, m.val]}
   end
 end
