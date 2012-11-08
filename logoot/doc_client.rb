@@ -49,11 +49,11 @@ class LatticeDocGUI
     @site_id = site_id.to_i
     @server = server
     @lmap = createDocLattice([[-1,-1,-1]], "begin document")
+    @c = Client.new(@site_id, @server)
   end
 
   def run
-    c = Client.new(@site_id, @server)
-    c.run_bg
+    @c.run_bg
 
     listStore = Gtk::ListStore.new(Array, String, String)
     treeView1 = Gtk::TreeView.new(listStore)
@@ -107,7 +107,7 @@ class LatticeDocGUI
       puts "got here!"
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
-      c.send_update(@lmap)
+      @c.send_update(@lmap)
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
@@ -122,7 +122,7 @@ class LatticeDocGUI
       id = listStore.get_value(iter, 0)
       rlm = createDocLattice(id, -1)
       @lmap = @lmap.merge(rlm)
-      c.send_update(@lmap)
+      @c.send_update(@lmap)
       treeView1.model.remove(iter)
       paths = getPaths(@lmap)
       for x in paths
@@ -133,24 +133,44 @@ class LatticeDocGUI
     end
 
     refreshButton.signal_connect("clicked") do |w|
-      c.sync_do {
-        @lmap = c.m.current_value
-      }
-      listStore.clear
-      paths = getPaths(@lmap)
-      for x in paths
-        x << [-1,-1,-1]
+      refresh_list(listStore)
+    end
+
+    # Check for new messages every 50 milliseconds. This is a gross hack (it
+    # would be better to trigger GUI updates when a new event is received), but
+    # doing it properly (e.g., adding a new event source to the Glib main loop)
+    # seems complicated.
+    event_q = Queue.new
+    @c.register_callback(:to_host) do
+      event_q.push(true)
+    end
+    Gtk.timeout_add(50) do
+      unless event_q.empty?
+        event_q.pop
+        refresh_list(listStore)
       end
-      loadDocument(@lmap, listStore, paths.reverse)
+      true
     end
 
     window = Gtk::Window.new("LatticeDoc")
     window.signal_connect("destroy") do
-      c.stop
+      @c.stop
       Gtk.main_quit
     end
     window.add(vbox)
     window.show_all
+  end
+
+  def refresh_list(listStore)
+    @c.sync_do {
+      @lmap = @c.m.current_value
+    }
+    listStore.clear
+    paths = getPaths(@lmap)
+    for x in paths
+      x << [-1,-1,-1]
+    end
+    loadDocument(@lmap, listStore, paths.reverse)
   end
 
   #paths in reverse order
