@@ -12,6 +12,7 @@ class LatticeDocServer
 
   bloom do
     stdio <~ connect {|c| ["New client: #{c.source_addr}"]}
+    stdio <~ to_server {|m| ["Msg @ server: #{m.inspect}"]}
     nodelist <= connect {|c| [c.source_addr]}
     to_host <~ (to_server * nodelist).pairs {|m,n| [n.key, m.val]}
   end

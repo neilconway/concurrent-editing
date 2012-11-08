@@ -12,12 +12,14 @@ class Client
   include Bud
   include LatticeDocProtocol
 
-  def initialize(server, opts={})
+  def initialize(client_id, server, opts={})
+    @client_id = client_id
     @server = server
     super opts
   end
 
   state do
+    scratch :delta_m, [] => [:val]
     lmap :m
   end
 
@@ -26,8 +28,18 @@ class Client
   end
 
   bloom do
-    to_server <~ [[@server, ip_port, m]]
+    stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
     m <= to_host {|h| h.val}
+
+    to_server <~ delta_m {|t| [@server, ip_port, t.val]}
+    m <= delta_m {|t| t.val}
+  end
+
+  def send_update(v)
+    puts "send_update: #{v.inspect}"
+    sync_do {
+      delta_m <+ [[v]]
+    }
   end
 end
 
@@ -40,7 +52,7 @@ class LatticeDocGUI
   end
 
   def run
-    c = Client.new(@server)
+    c = Client.new(@site_id, @server)
     c.run_bg
 
     listStore = Gtk::ListStore.new(Array, String, String)
@@ -55,30 +67,17 @@ class LatticeDocGUI
 
     afterButton = Gtk::Button.new("Insert After")
     deleteButton = Gtk::Button.new("Delete")
-    updateButton = Gtk::Button.new("Refresh")
+    refreshButton = Gtk::Button.new("Refresh")
     entry = Gtk::Entry.new
 
     vbox = Gtk::VBox.new(homogeneous=false, spacing=nil)
     vbox.pack_start_defaults(treeView1)
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
-    vbox.pack_start_defaults(updateButton)
+    vbox.pack_start_defaults(refreshButton)
     vbox.pack_start_defaults(entry)
 
     iter = nil
-
-    ############################################
-    # Push- update code-- causes gui to freeze #
-    ############################################
-    #GLib::Idle.add { c.tick
-    #  @lmap = c.m.current_value
-    #  listStore.clear
-    #  paths = getPaths(@lmap)
-    #  for x in paths
-    #    x << [-1,-1,-1]
-    #  end
-    #  loadDocument(c.m.current_value, listStore, paths.reverse)
-    #  sleep 1}
 
     treeView1.signal_connect("row-activated") do |view, path, column|
       iter = treeView1.model.get_iter(path)
@@ -86,6 +85,7 @@ class LatticeDocGUI
     end
 
     afterButton.signal_connect("clicked") do |w|
+      puts "afterButton clicked!"
       firstID = listStore.get_value(iter, 0) unless iter.nil?
       if firstID == false or firstID == nil
         temp = false
@@ -104,14 +104,10 @@ class LatticeDocGUI
         end
         newID = generateNewId(temp, temp2, @site_id)
       end
+      puts "got here!"
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
-      c.sync_do {
-        c.m <+ @lmap
-      }
-      c.sync_do {
-        @lmap = c.m.current_value
-      }
+      c.send_update(@lmap)
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
@@ -126,12 +122,7 @@ class LatticeDocGUI
       id = listStore.get_value(iter, 0)
       rlm = createDocLattice(id, -1)
       @lmap = @lmap.merge(rlm)
-      c.sync_do {
-        c.m <+ @lmap
-      }
-      c.sync_do {
-        @lmap = c.m.current_value
-      }
+      c.send_update(@lmap)
       treeView1.model.remove(iter)
       paths = getPaths(@lmap)
       for x in paths
@@ -141,7 +132,7 @@ class LatticeDocGUI
       loadDocument(@lmap, listStore, paths.reverse)
     end
 
-    updateButton.signal_connect("clicked") do |w|
+    refreshButton.signal_connect("clicked") do |w|
       c.sync_do {
         @lmap = c.m.current_value
       }
