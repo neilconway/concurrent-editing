@@ -56,55 +56,55 @@ class LatticeDocGUI
     @c.run_bg
 
     listStore = Gtk::ListStore.new(Array, String, String)
-    treeView1 = Gtk::TreeView.new(listStore)
-    treeView1.selection.mode = Gtk::SELECTION_SINGLE
+    treeView = Gtk::TreeView.new(listStore)
+    treeView.selection.mode = Gtk::SELECTION_SINGLE
     renderer = Gtk::CellRendererText.new
     col0 = Gtk::TreeViewColumn.new("Position ID (Array)", renderer, :text => 0)
     col1 = Gtk::TreeViewColumn.new("Text", renderer, :text => 1)
-    treeView1.append_column(col1)
+    treeView.append_column(col1)
     col2 = Gtk::TreeViewColumn.new("Position ID", renderer, :text => 2)
-    treeView1.append_column(col2)
+    treeView.append_column(col2)
 
     afterButton = Gtk::Button.new("Insert After")
     deleteButton = Gtk::Button.new("Delete")
+    deleteButton.sensitive = false
     refreshButton = Gtk::Button.new("Refresh")
     entry = Gtk::Entry.new
+    entry.width_chars = 30
 
     vbox = Gtk::VBox.new(homogeneous=false, spacing=nil)
-    vbox.pack_start_defaults(treeView1)
+    vbox.pack_start_defaults(treeView)
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
     vbox.pack_start_defaults(refreshButton)
     vbox.pack_start_defaults(entry)
 
-    iter = nil
-
-    treeView1.signal_connect("row-activated") do |view, path, column|
-      iter = treeView1.model.get_iter(path)
-      puts "Selected: #{path.to_s}"
+    treeView.selection.signal_connect("changed") do
+      iter = treeView.selection.selected
+      if iter.nil?
+        deleteButton.sensitive = false
+      else
+        deleteButton.sensitive = true
+      end
     end
 
     afterButton.signal_connect("clicked") do |w|
-      puts "afterButton clicked!"
-      firstID = listStore.get_value(iter, 0) unless iter.nil?
-      if firstID == false or firstID == nil
-        temp = false
+      iter = treeView.selection.selected
+      if iter.nil?
+        firstID = secondID = false
       else
-        temp = firstID.clone
-      end
-      if iter == nil
-        newID = getNewID(temp, @site_id)
-      else
+        firstID = listStore.get_value(iter, 0)
+        raise if firstID.nil?
         iter.next!
         secondID = listStore.get_value(iter, 0)
-        if secondID == false or secondID == nil
-          temp2 = false
-        else
-          temp2 = secondID.clone
-        end
-        newID = generateNewId(temp, temp2, @site_id)
+        secondID ||= false
       end
-      puts "got here!"
+
+      puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
+      firstID = firstID.clone if firstID
+      secondID = secondID.clone if secondID
+      newID = generateNewId(firstID, secondID, @site_id)
+
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
@@ -119,11 +119,12 @@ class LatticeDocGUI
     end
 
     deleteButton.signal_connect("clicked") do |w|
+      iter = treeView.selection.selected
+      next if iter.nil?
       id = listStore.get_value(iter, 0)
       rlm = createDocLattice(id, -1)
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
-      treeView1.model.remove(iter)
       paths = getPaths(@lmap)
       for x in paths
         x << [-1,-1,-1]
@@ -152,7 +153,7 @@ class LatticeDocGUI
       true
     end
 
-    window = Gtk::Window.new("LatticeDoc")
+    window = Gtk::Window.new("Lattice Editor")
     window.signal_connect("destroy") do
       @c.stop
       Gtk.main_quit
