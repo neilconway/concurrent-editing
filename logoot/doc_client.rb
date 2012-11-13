@@ -111,9 +111,8 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
-      for x in paths
-        x << [-1,-1,-1]
-      end
+      puts "paths"
+      pp paths
       listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
       entry.text = ""
@@ -127,9 +126,9 @@ class LatticeDocGUI
         firstID = secondID = false
       else
         firstID = listStore.get_value(iter1, 0)
-        raise if firstID.nil?
+        firstID ||= false
         secondID = listStore.get_value(iter2, 0)
-        secondID ||= false
+        raise if secondID.nil?
       end
 
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
@@ -141,9 +140,6 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
-      for x in paths
-        x << [-1,-1,-1]
-      end
       listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
       entry.text = ""
@@ -158,9 +154,6 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
-      for x in paths
-        x << [-1,-1,-1]
-      end
       listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
     end
@@ -200,9 +193,6 @@ class LatticeDocGUI
     }
     listStore.clear
     paths = getPaths(@lmap)
-    for x in paths
-      x << [-1,-1,-1]
-    end
     loadDocument(@lmap, listStore, paths.reverse)
   end
 
@@ -226,13 +216,15 @@ class LatticeDocGUI
   end
 end
 
- def iter_prev(iter, treeView)
-   path = iter.path
-   PP.pp(path)
-   path.prev!
-   prev_iter = treeView.model.get_iter(path)
-   return prev_iter
- end
+def iter_prev(iter, treeView)
+  if iter.nil?
+    return nil
+  end
+  path = iter.path
+  path.prev!
+  prev_iter = treeView.model.get_iter(path)
+  return prev_iter
+end
 
 if __FILE__ == $0
   server = (ARGV.length == 2) ? ARGV[1] : LatticeDocProtocol::DEFAULT_ADDR

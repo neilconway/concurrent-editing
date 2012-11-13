@@ -37,7 +37,11 @@ def getPaths(lmap)
     end
     return rtn
   end
-  return helper(lmap, [])
+  paths = helper(lmap, [])
+  for x in paths
+    x << TEXT_FLAG
+  end
+  return paths
 end
 
 
