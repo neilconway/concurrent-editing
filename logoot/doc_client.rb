@@ -48,7 +48,7 @@ class LatticeDocGUI
   def initialize(site_id, server)
     @site_id = site_id.to_i
     @server = server
-    @lmap = createDocLattice([[-1,-1,-1]], "begin document")
+    @lmap = createDocLattice([[-1,-1,-1]], "")
     @c = Client.new(@site_id, @server)
   end
 
@@ -66,6 +66,7 @@ class LatticeDocGUI
     treeView.append_column(col2)
 
     afterButton = Gtk::Button.new("Insert After")
+    beforeButton = Gtk::Button.new("Insert Before")
     deleteButton = Gtk::Button.new("Delete")
     deleteButton.sensitive = false
     refreshButton = Gtk::Button.new("Refresh")
@@ -76,6 +77,7 @@ class LatticeDocGUI
     vbox.pack_start_defaults(treeView)
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
+    vbox.pack_start_defaults(beforeButton)
     vbox.pack_start_defaults(refreshButton)
     vbox.pack_start_defaults(entry)
 
@@ -104,6 +106,36 @@ class LatticeDocGUI
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
       newID = generateNewId(firstID, secondID, @site_id)
+
+      rlm = createDocLattice(newID, entry.text)
+      @lmap = @lmap.merge(rlm)
+      @c.send_update(@lmap)
+      paths = getPaths(@lmap)
+      for x in paths
+        x << [-1,-1,-1]
+      end
+      listStore.clear
+      loadDocument(@lmap, listStore, paths.reverse)
+      entry.text = ""
+      entry.focus = true
+    end
+
+    beforeButton.signal_connect("clicked") do |w|
+      iter1 = treeView.selection.selected
+      iter2 = iter_prev(iter1, treeView)
+      if iter1.nil? or iter2.nil?
+        firstID = secondID = false
+      else
+        firstID = listStore.get_value(iter1, 0)
+        raise if firstID.nil?
+        secondID = listStore.get_value(iter2, 0)
+        secondID ||= false
+      end
+
+      puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
+      firstID = firstID.clone if firstID
+      secondID = secondID.clone if secondID
+      newID = generateNewId(secondID, firstID, @site_id)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
@@ -193,6 +225,14 @@ class LatticeDocGUI
     end
   end
 end
+
+ def iter_prev(iter, treeView)
+   path = iter.path
+   PP.pp(path)
+   path.prev!
+   prev_iter = treeView.model.get_iter(path)
+   return prev_iter
+ end
 
 if __FILE__ == $0
   server = (ARGV.length == 2) ? ARGV[1] : LatticeDocProtocol::DEFAULT_ADDR
