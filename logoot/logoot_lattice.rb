@@ -5,6 +5,7 @@ require 'pp'
 require_relative 'lfixed'
 
 TEXT_FLAG = [-1,-1,-1]
+MAX_INT = 100
 
 def createDocLattice(line_id, text)
   for t in line_id.reverse
@@ -45,48 +46,25 @@ def getPaths(lmap)
 end
 
 
-#TODO: Make newID generation come up with most efficient line_id
-#TODO: fix hackiness in generateNewId
-def getNewID(line_id, site_id)
-  if line_id == false
-    return [[rand(100), site_id, Time.now.sec], TEXT_FLAG]
+def constructId(line_id1, line_id2, site_id)
+  if line_id1 == false and line_id2 == false
+    return [[rand(MAX_INT), site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+  elsif line_id1 == line_id2
+    randomNum = (1..line_id1[0][0] - 1).to_a.sample
+    return [[randomNum, site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+  elsif line_id1 == false
+    constructId([0,0,0], line_id2, site_id)
+  elsif line_id2 == false
+    constructId(line_id1, [MAX_INT, MAX_INT, MAX_INT], site_id)
+  elsif line_id2[0][0] - line_id1[0][0] > 1
+    randomNum = (line_id1[0][0] + 1 .. line_id2[0][0] - 1).to_a.sample
+    return [[randomNum, site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
   else
-    line_id.pop
-    newID = line_id.concat([[rand(100), site_id, Time.now.sec]])
-    newID = newID.concat([TEXT_FLAG])
-    puts "new id"
-    pp newID
-    return newID
+    line_id1.pop
+    return line_id1.concat([[rand(MAX_INT), site_id, Time.now.sec + Time.now.min], TEXT_FLAG])
   end
 end
 
-def generateNewId(line_id1, line_id2, site_id)
-  if line_id1 == false or line_id2 == false
-    return getNewID(line_id1, site_id)
-  end
-  size1 = line_id1.size
-  size2 = line_id2.size
-  if size1 == size2 or size1 > size2 or line_id2 == false
-    return getNewID(line_id1, site_id)
-  else
-    line_id1.pop
-    line_id2.pop
-    for i in (0..size1)
-      if line_id1[i] != line_id2[i]
-        randomNum = (0 .. line_id2[i][0]).to_a.sample
-        if randomNum == line_id2[i][0]
-          modified_time = (0 .. line_id2[i][2]).to_a.sample
-          newId = line_id1[0..i].concat([[randomNum, site_id, modified_time]])
-          newId.concat([TEXT_FLAG])
-          return newId
-        end
-        newId = line_id1[0..i].concat([[randomNum, site_id, Time.now.sec]])
-        newId.concat([TEXT_FLAG])
-        return newId
-      end
-    end
-  end
-end
 
 class PrettyPrinter
   def printDocument(lmap)

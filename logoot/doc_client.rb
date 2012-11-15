@@ -48,7 +48,7 @@ class LatticeDocGUI
   def initialize(site_id, server)
     @site_id = site_id.to_i
     @server = server
-    @lmap = createDocLattice([[-1,-1,-1]], "")
+    @lmap = Bud::MapLattice.new()
     @c = Client.new(@site_id, @server)
   end
 
@@ -69,7 +69,6 @@ class LatticeDocGUI
     beforeButton = Gtk::Button.new("Insert Before")
     deleteButton = Gtk::Button.new("Delete")
     deleteButton.sensitive = false
-    refreshButton = Gtk::Button.new("Refresh")
     entry = Gtk::Entry.new
     entry.width_chars = 30
 
@@ -78,7 +77,6 @@ class LatticeDocGUI
     vbox.pack_start_defaults(deleteButton)
     vbox.pack_start_defaults(afterButton)
     vbox.pack_start_defaults(beforeButton)
-    vbox.pack_start_defaults(refreshButton)
     vbox.pack_start_defaults(entry)
 
     treeView.selection.signal_connect("changed") do
@@ -105,7 +103,7 @@ class LatticeDocGUI
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = generateNewId(firstID, secondID, @site_id)
+      newID = constructId(firstID, secondID, @site_id)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
@@ -134,7 +132,7 @@ class LatticeDocGUI
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = generateNewId(secondID, firstID, @site_id)
+      newID = constructId(secondID, firstID, @site_id)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
@@ -156,10 +154,6 @@ class LatticeDocGUI
       paths = getPaths(@lmap)
       listStore.clear
       loadDocument(@lmap, listStore, paths.reverse)
-    end
-
-    refreshButton.signal_connect("clicked") do |w|
-      refresh_list(listStore)
     end
 
     # Check for new messages every 50 milliseconds. This is a gross hack (it
