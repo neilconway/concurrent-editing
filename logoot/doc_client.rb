@@ -91,19 +91,22 @@ class LatticeDocGUI
     afterButton.signal_connect("clicked") do |w|
       iter = treeView.selection.selected
       if iter.nil?
-        firstID = secondID = false
+        firstID = secondID = nil
       else
         firstID = listStore.get_value(iter, 0)
         raise if firstID.nil?
         iter.next!
         secondID = listStore.get_value(iter, 0)
-        secondID ||= false
+        secondID ||= nil
       end
 
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = constructId(firstID, secondID, @site_id)
+      PP.pp(firstID)
+      PP.pp(secondID)
+
+      newID = constructId(firstID, secondID, @site_id, false)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
@@ -121,10 +124,10 @@ class LatticeDocGUI
       iter1 = treeView.selection.selected
       iter2 = iter_prev(iter1, treeView)
       if iter1.nil? or iter2.nil?
-        firstID = secondID = false
+        firstID = secondID = nil
       else
         firstID = listStore.get_value(iter1, 0)
-        firstID ||= false
+        firstID ||= nil
         secondID = listStore.get_value(iter2, 0)
         raise if secondID.nil?
       end
@@ -132,7 +135,7 @@ class LatticeDocGUI
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = constructId(secondID, firstID, @site_id)
+      newID = constructId(secondID, firstID, @site_id, true)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
