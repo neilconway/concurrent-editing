@@ -50,6 +50,7 @@ class LatticeDocGUI
     @server = server
     @lmap = Bud::MapLattice.new()
     @c = Client.new(@site_id, @server)
+    @time = 0
   end
 
   def run
@@ -89,6 +90,7 @@ class LatticeDocGUI
     end
 
     afterButton.signal_connect("clicked") do |w|
+      @time += 1
       iter = treeView.selection.selected
       if iter.nil?
         firstID = secondID = nil
@@ -106,7 +108,7 @@ class LatticeDocGUI
       PP.pp(firstID)
       PP.pp(secondID)
 
-      newID = constructId(firstID, secondID, @site_id, false)
+      newID = constructId(firstID, secondID, @site_id, false, @time)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
@@ -121,6 +123,7 @@ class LatticeDocGUI
     end
 
     beforeButton.signal_connect("clicked") do |w|
+      @time += 1
       iter1 = treeView.selection.selected
       iter2 = iter_prev(iter1, treeView)
       if iter1.nil? or iter2.nil?
@@ -135,7 +138,7 @@ class LatticeDocGUI
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = constructId(secondID, firstID, @site_id, true)
+      newID = constructId(secondID, firstID, @site_id, true, @time)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)

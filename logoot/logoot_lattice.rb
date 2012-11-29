@@ -46,25 +46,25 @@ def getPaths(lmap)
 end
 
 # if before == true, then we are inserting before.  If false, inserting after
-def constructId(line_id1, line_id2, site_id, before)
+def constructId(line_id1, line_id2, site_id, before, time)
   if line_id1 == nil and line_id2 == nil
-    return [[rand(MAX_INT), site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+    return [[rand(MAX_INT), site_id, time], TEXT_FLAG]
   elsif line_id1 == line_id2 and before
     randomNum = (1..line_id1[0][0] - 1).to_a.sample
-    return [[randomNum, site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+    return [[randomNum, site_id, time], TEXT_FLAG]
   elsif line_id1 == line_id2 and not before
     randomNum = (line_id1[0][0] + 1 .. MAX_INT).to_a.sample
-    return [[randomNum, site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+    return [[randomNum, site_id, time], TEXT_FLAG]
   elsif line_id1 == nil
     constructId([0,0,0], line_id2, site_id)
   elsif line_id2 == nil
     constructId(line_id1, [MAX_INT, MAX_INT, MAX_INT], site_id)
   elsif line_id2[0][0] - line_id1[0][0] > 1
     randomNum = (line_id1[0][0] + 1 .. line_id2[0][0] - 1).to_a.sample
-    return [[randomNum, site_id, Time.now.sec + Time.now.min], TEXT_FLAG]
+    return [[randomNum, site_id, time], TEXT_FLAG]
   else
     line_id1.pop
-    return line_id1.concat([[rand(MAX_INT), site_id, Time.now.sec + Time.now.min], TEXT_FLAG])
+    return line_id1.concat([[rand(MAX_INT), site_id, time], TEXT_FLAG])
   end
 end
 
