@@ -197,11 +197,14 @@ class LatticeDocGUI
 
   #paths in reverse order
   def loadDocument(lmap, treestore, paths, document)
+    PP.pp(paths)
     for i in 0..document.length
-      parent = treestore.append
-      parent.set_value(0, paths[i])
-      parent.set_value(1, document[i])
-      parent.set_value(2, PP.pp(paths[i], ""))
+      if paths[i] != nil
+        parent = treestore.append
+        parent.set_value(0, paths[i])
+        parent.set_value(1, document[i])
+        parent.set_value(2, PP.pp(paths[i], ""))
+      end
     end
   end
 end
