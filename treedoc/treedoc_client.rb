@@ -112,8 +112,6 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
-      puts "paths"
-      pp paths
       myDocument = readInOrder(@lmap)
       listStore.clear
       loadDocument(@lmap, listStore, paths.sort, myDocument)
