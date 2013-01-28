@@ -1,6 +1,6 @@
 require 'rubygems'
 require 'backports'
-require_relative 'doc_client'
+require_relative 'doc_client_paragraph'
 require_relative 'doc_server'
 
 ip, port = LatticeDocProtocol::DEFAULT_ADDR.split(":")
