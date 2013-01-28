@@ -6,7 +6,7 @@ require 'gtk2'
 require 'pp'
 require_relative 'doc_protocol'
 require_relative 'lfixed'
-require_relative 'logoot_lattice'
+require_relative 'treeDoc_lattice'
 
 class Client
   include Bud
@@ -108,16 +108,15 @@ class LatticeDocGUI
       PP.pp(firstID)
       PP.pp(secondID)
 
-      newID = constructId(firstID, secondID, @site_id, false, @time)
+      newID = gen_id_after(firstID, @site_id, @time)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
-      puts "paths"
-      pp paths
+      myDocument = readInOrder(@lmap)
       listStore.clear
-      loadDocument(@lmap, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.sort, myDocument)
       entry.text = ""
       entry.focus = true
     end
@@ -138,14 +137,15 @@ class LatticeDocGUI
       puts "PRE: #{firstID.inspect}; POST = #{secondID.inspect}"
       firstID = firstID.clone if firstID
       secondID = secondID.clone if secondID
-      newID = constructId(secondID, firstID, @site_id, true, @time)
+      newID = gen_id_before(firstID, @site_id, @time)
 
       rlm = createDocLattice(newID, entry.text)
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
+      myDocument = readInOrder(@lmap)
       listStore.clear
-      loadDocument(@lmap, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.sort, myDocument)
       entry.text = ""
       entry.focus = true
     end
@@ -158,8 +158,9 @@ class LatticeDocGUI
       @lmap = @lmap.merge(rlm)
       @c.send_update(@lmap)
       paths = getPaths(@lmap)
+      myDocument = readInOrder(@lmap)
       listStore.clear
-      loadDocument(@lmap, listStore, paths.reverse)
+      loadDocument(@lmap, listStore, paths.sort, myDocument)
     end
 
     # Check for new messages every 50 milliseconds. This is a gross hack (it
@@ -191,30 +192,40 @@ class LatticeDocGUI
     @c.sync_do {
       @lmap = @c.m.current_value
     }
+    myDocument = readInOrder(@lmap)
     listStore.clear
     paths = getPaths(@lmap)
-    loadDocument(@lmap, listStore, paths.reverse)
+    loadDocument(@lmap, listStore, paths.sort, myDocument)
   end
 
   #paths in reverse order
-  def loadDocument(lmap, treestore, paths)
-    sortedKeys = lmap.reveal.keys.sort
-    for key in sortedKeys
-      if key == [-1,-1,-1]
-        if lmap.reveal.values_at(key)[0].reveal != -1
-          parent = treestore.append
-          curPath = paths.pop
-          parent.set_value(0, curPath)
-          parent.set_value(1, lmap.reveal.values_at(key)[0].reveal)
-          parent.set_value(2, PP.pp(curPath, ""))
-        end
-        next
+  def loadDocument(lmap, treestore, paths, document)
+    PP.pp(paths)
+    for i in 0..document.length
+      if paths[i] != nil
+        parent = treestore.append
+        parent.set_value(0, paths[i])
+        parent.set_value(1, document[i])
+        parent.set_value(2, PP.pp(paths[i], ""))
       end
-      nextLmap = lmap.reveal[key]
-      loadDocument(nextLmap, treestore, paths)
     end
   end
 end
+
+def readInOrder(lmap, doc=[])
+  sortedKeys = lmap.reveal.keys.sort
+  for key in sortedKeys
+    if key == [1,1]
+      if lmap.reveal.values_at(key)[0].reveal != -1
+        doc << lmap.reveal.values_at(key)[0].reveal
+      end
+      next
+    end
+    readInOrder(lmap.reveal[key], doc)
+  end
+  return doc
+end
+
 
 def iter_prev(iter, treeView)
   if iter.nil?
