@@ -1,6 +1,4 @@
 require './test_common'
-require 'rubygems'
-require 'bud'
 require './treedoc'
 
 
