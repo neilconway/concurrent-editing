@@ -6,14 +6,13 @@ class SeqLattice < Bud::Lattice
 
   def initialize(i=[])
     reject_input(i) unless i.all?{|v| v.kind_of? Comparable}
+
+    i = SortedSet.new(i) unless i.kind_of? SortedSet
     @v = i
   end
 
-  # XXX: inefficient. Should merge in linear time instead.
   def merge(i)
-    vals = @v | i.reveal
-    vals.sort!
-    wrap_unsafe(vals)
+    wrap_unsafe(@v | i.reveal)
   end
 
   morph :elements do
