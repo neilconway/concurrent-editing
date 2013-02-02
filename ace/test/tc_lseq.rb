@@ -1,9 +1,5 @@
-require 'rubygems'
-require 'bud'
+require_relative 'test_common'
 require_relative '../lseq'
-
-gem 'minitest'
-require 'minitest/autorun'
 
 class SeqTest < MiniTest::Unit::TestCase
   def test_non_comparable
@@ -13,8 +9,6 @@ class SeqTest < MiniTest::Unit::TestCase
   def check_permutations(ops)
     ops.permutation.each do |x|
       ops.permutation.each do |y|
-#        v = x.reduce(:merge)
-#        puts "v = #{v.inspect}"
         assert(x.reduce(:merge) == y.reduce(:merge))
       end
     end
