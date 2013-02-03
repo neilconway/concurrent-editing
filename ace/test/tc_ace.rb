@@ -28,4 +28,7 @@ class AceTest < MiniTest::Unit::TestCase
 
   def test_cyclic_post
   end
+
+  def test_connected_doc
+  end
 end

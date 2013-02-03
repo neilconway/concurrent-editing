@@ -43,9 +43,11 @@ class AceReplica
       end
     end
 
-    # Check that pre < post
+    # Check that pre < post (redundant with acyclicity?)
 
     # Check that pre and post relations are acyclic
+
+    # Check that pre/post graph is connected
   end
 
   def insert_op(txt, pre, post)
