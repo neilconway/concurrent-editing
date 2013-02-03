@@ -25,19 +25,3 @@ class TSort
   end
 end
 
-# t = TSort.new
-# t.edge <= [['aa', 'b'],
-#            ['a', 'b'],
-#            ['b', 'c'],
-#            ['c', 'd'],
-#            ['d', 'y'],
-#            ['d', 'z'],
-#            ['a', 'm'],
-#            ['m', 'n'],
-#            ['n', 'o'],
-#            ['o', 'y'],
-#            ['o', 'z']]
-# t.tick
-# puts t.min_cost.to_a.inspect
-# puts t.min_cost.to_a.sort {|a,b| [a.c, a.n] <=> [b.c, b.n]}
-
