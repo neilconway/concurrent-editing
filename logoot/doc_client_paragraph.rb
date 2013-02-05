@@ -52,6 +52,8 @@ class LatticeDocGUI
     @c = Client.new(@site_id, @server)
     @table = Hash.new()
     @textview
+    @time = 0
+    @pulled = false
   end
 
   def run
@@ -66,10 +68,9 @@ class LatticeDocGUI
     ed = LatticeDocGUI.new(@site_id, @server)
     @textview = Gtk::TextView.new
 
-    push = Gtk::Button.new("Push")
+
     pull = Gtk::Button.new("Pull")
 
-    push.signal_connect("clicked") { push_clicked(ed) }
     pull.signal_connect("clicked") { pull_clicked(ed) }
 
     scrolled_win = Gtk::ScrolledWindow.new
@@ -78,9 +79,7 @@ class LatticeDocGUI
     scrolled_win.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_ALWAYS)
 
     vbox = Gtk::VBox.new(true, 5)
-    vbox.pack_start(push, false, false, 0)
     vbox.pack_start(pull, false, false, 0)
-
 
     table = Gtk::Table.new(2, 2, false)
 
@@ -91,38 +90,50 @@ class LatticeDocGUI
 
     window.add(table)
     window.show_all
-    # Check for new messages every 50 milliseconds. This is a gross hack (it
-    # would be better to trigger GUI updates when a new event is received), but
-    # doing it properly (e.g., adding a new event source to the Glib main loop)
-    # seems complicated.
-    event_q = Queue.new
-    @c.register_callback(:to_host) do
-      event_q.push(true)
-    end
-    Gtk.timeout_add(50) do
-      unless event_q.empty?
-        event_q.pop
-        refresh_lmap()
-      end
-      true
-    end
-  end
 
-  def push_clicked(te)
-    delta_lattice = createDelta(@textview.buffer.text, @table, @site_id)
-    @lmap = @lmap.merge(delta_lattice)
-    @c.send_update(@lmap)
+    @textview.buffer.signal_connect("insert-text") do |buf, it, txt, len|
+      if @pulled == false
+        @time += 1
+        delta = createDelta(txt, it.offset, @table, @site_id, @time)
+        @lmap = @lmap.merge(delta)
+        @c.send_update(@lmap)
+        @table = createTable(@lmap, getPaths(@lmap).reverse,0)
+      else
+        @pulled = false
+      end
+    end
+
+    @textview.buffer.signal_connect("delete-range") do |buf, i1, i2|
+      if @pulled == false
+        @time += 1
+        delta = createDocLattice(@table[i2.offset][1], -1)
+        @lmap = @lmap.merge(delta)
+        @c.send_update(@lmap)
+        paths = getPaths(@lmap)
+        @table = createTable(@lmap, paths.reverse, 0)
+      else
+        @pulled = false
+      end
+    end
+
   end
 
   def pull_clicked(te)
+    #@textview.buffer.signal_emit_stop("insert-text")
+    @pulled = true
+    @c.sync_do {
+      @lmap = @c.m.current_value
+    }
     paths = getPaths(@lmap)
     @table = createTable(@lmap, paths.reverse, 0)
+    p @table
+    @textview.buffer.text = ""
     initialDoc = ""
     for key in @table.keys.sort
-      initialDoc = initialDoc + @table[key][0] + '#'
+      initialDoc = initialDoc + @table[key][0]
     end
-    initialDoc = '#' + initialDoc
     @textview.buffer.text = initialDoc
+    @pulled = false
   end
 
   def refresh_lmap()
