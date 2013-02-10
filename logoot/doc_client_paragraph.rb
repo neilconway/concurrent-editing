@@ -92,19 +92,26 @@ class LatticeDocGUI
     window.show_all
 
     @textview.buffer.signal_connect("insert-text") do |buf, it, txt, len|
-      if @pulled == false
+      if len > 1
+        @pulled = true
+      end
+    end
+
+    @textview.buffer.signal_connect_after("insert-text") do |buf, it, txt, len|
+      if @pulled
+        @pulled = false
+      else
         @time += 1
         delta = createDelta(txt, it.offset, @table, @site_id, @time)
         @lmap = @lmap.merge(delta)
         @c.send_update(@lmap)
         @table = createTable(@lmap, getPaths(@lmap).reverse,0)
-      else
         @pulled = false
       end
     end
 
     @textview.buffer.signal_connect("delete-range") do |buf, i1, i2|
-      if @pulled == false
+      if not @pulled
         @time += 1
         delta = createDocLattice(@table[i2.offset][1], -1)
         @lmap = @lmap.merge(delta)
@@ -115,25 +122,21 @@ class LatticeDocGUI
         @pulled = false
       end
     end
-
   end
 
   def pull_clicked(te)
-    #@textview.buffer.signal_emit_stop("insert-text")
     @pulled = true
     @c.sync_do {
       @lmap = @c.m.current_value
     }
     paths = getPaths(@lmap)
     @table = createTable(@lmap, paths.reverse, 0)
-    p @table
     @textview.buffer.text = ""
     initialDoc = ""
     for key in @table.keys.sort
       initialDoc = initialDoc + @table[key][0]
     end
     @textview.buffer.text = initialDoc
-    @pulled = false
   end
 
   def refresh_lmap()

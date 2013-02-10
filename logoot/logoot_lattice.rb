@@ -100,8 +100,6 @@ def createTable(lmap, paths, char_offset)
 end
 
 def createDelta(newText, offset, currentTable, site_id, time)
-  offset = offset + 1
-  # This accounts for shift in offsets due to start and end doc
   post = currentTable[offset]
   if post != nil
     post = post[1]
