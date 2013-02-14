@@ -62,12 +62,30 @@ def constructId(pre, post, site_id, time)
   elsif post[0][0] - pre[0][0] > 1
     randomNum = (pre[0][0] + 1..post[0][0] - 1).to_a.sample
     return [[randomNum, site_id, time], TEXT_FLAG]
+  elsif post[0] == pre[0] and post.length > pre.length
+    #Could be case when this does not work- 
+    # pre = [100,1,4]
+    # post = [100,1,4][0,1,1]
+
+    diffNum = find_differing_num(pre, post)
+    randomNum = rand(diffNum -1)
+    pre.pop
+    return pre.concat([[randomNum, site_id, time], TEXT_FLAG])
   else
     pre.pop
     return pre.concat([[rand(MAX_INT), site_id, time], TEXT_FLAG])
   end
 end
 
+
+def find_differing_num(pre, post)
+  for i in 0..post.length
+    if pre[i] != post[i]
+      p post[i][0]
+      return post[i][0]
+    end
+  end
+end
 
 def tableHelper(lmap, hash, paths)
   sortedKeys = lmap.reveal.keys.sort
@@ -102,13 +120,16 @@ end
 def createDelta(newText, offset, currentTable, site_id, time)
   post = currentTable[offset]
   if post != nil
+    #p post
     post = post[1]
   end
   pre = currentTable[offset - 1]
   if pre != nil
+    #p pre
     pre = pre[1]
   end
   newID = constructId(pre, post, site_id, time)
+  p newID
   return  createDocLattice(newID, newText)
 end
 

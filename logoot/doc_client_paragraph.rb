@@ -28,7 +28,7 @@ class Client
   end
 
   bloom do
-    stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
+    #stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
     m <= to_host {|h| h.val}
 
     to_server <~ delta_m {|t| [@server, ip_port, t.val]}
@@ -36,7 +36,7 @@ class Client
   end
 
   def send_update(v)
-    puts "send_update: #{v.inspect}"
+    #puts "send_update: #{v.inspect}"
     sync_do {
       delta_m <+ [[v]]
     }
@@ -106,6 +106,7 @@ class LatticeDocGUI
         @lmap = @lmap.merge(delta)
         @c.send_update(@lmap)
         @table = createTable(@lmap, getPaths(@lmap).reverse,0)
+        #p @table
         @pulled = false
       end
     end
@@ -118,6 +119,7 @@ class LatticeDocGUI
         @c.send_update(@lmap)
         paths = getPaths(@lmap)
         @table = createTable(@lmap, paths.reverse, 0)
+        #p @table
       else
         @pulled = false
       end
