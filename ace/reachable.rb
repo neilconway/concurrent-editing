@@ -1,5 +1,9 @@
 require 'rubygems'
 require 'bud'
+require 'graphviz'
+
+BEGIN_ID = "__begin__"
+END_ID = "__end__"
 
 class Reachable
   include Bud
@@ -18,12 +22,17 @@ class Reachable
     scratch :bad_post, constraints.schema
   end
 
+  bootstrap do
+    constraints <+ [[BEGIN_ID, nil, END_ID],
+                    [END_ID, BEGIN_ID, nil]]
+  end
+
   bloom do
     reach_pre <= constraints {|c| [c.id, c.id]}
-    reach_pre <= (reach_pre * constraints).pairs(:to => :id) {|r,c| [r.from, c.pre]}
+    reach_pre <= (reach_pre * constraints).pairs(:to => :id) {|r,c| [r.from, c.pre] unless c.pre.nil?}
 
     reach_post <= constraints {|c| [c.id, c.id]}
-    reach_post <= (reach_post * constraints).pairs(:to => :id) {|r,c| [r.from, c.post]}
+    reach_post <= (reach_post * constraints).pairs(:to => :id) {|r,c| [r.from, c.post] unless c.post.nil?}
 
     reach_set <= reach_pre {|r| {r.from => Bud::SetLattice.new([r.to])} unless r.from == r.to}
     reach_set <= reach_post {|r| {r.from => Bud::SetLattice.new([r.to])} unless r.from == r.to}
@@ -33,15 +42,40 @@ class Reachable
     # Check that constraints reference extant nodes
     bad_pre <= constraints.notin(constraints, :pre => :id)
     bad_post <= constraints.notin(constraints, :post => :id)
+
+    # Check that constraint graph is acyclic
+
+    # Check that constraint graph is connected
+  end
+
+  def viz_graph
+    g = GraphViz.new(:G, :type => :digraph, :rankdir => "LR")
+    constraints.each do |c|
+      sg = case c.id
+           when BEGIN_ID
+             g.add_graph(c.id, :rank => "source")
+           when END_ID
+             g.add_graph(c.id, :rank => "sink")
+           else
+             g
+           end
+
+      sg.add_nodes(c.id)
+      g.add_edges(c.id, c.pre, :label => "Pre") if c.pre
+      g.add_edges(c.id, c.post, :label => "Post") if c.post
+    end
+
+    g.output(:pdf => "reachable.pdf")
   end
 end
 
 r = Reachable.new
-r.constraints <+ [["1", "x", "y"],
-                  ["2", "x", "y"],
-                  ["3", "x", "1"],
+r.constraints <+ [["1", BEGIN_ID, END_ID],
+                  ["2", BEGIN_ID, END_ID],
+                  ["3", BEGIN_ID, "1"],
                   ["4", "3", "1"]]
 r.tick
+r.viz_graph
 
 # puts r.reach_pre.to_a.sort.inspect
 # puts r.reach_post.to_a.sort.inspect
@@ -51,8 +85,5 @@ m.keys.sort.each do |k|
   puts "#{k} => #{m[k].reveal.sort}"
 end
 
-#puts r.reach_set.current_value.inspect
-
 puts r.bad_pre.to_a.inspect
 puts r.bad_post.to_a.inspect
-
