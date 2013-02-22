@@ -18,6 +18,7 @@ class AceReplica
   state do
     table :insert_ops, [:id] => [:txt, :pre, :post]
     scratch :err, insert_ops.schema
+    scratch :missing_ref, insert_ops.schema
   end
 
   # START and END sentinels
@@ -29,19 +30,10 @@ class AceReplica
   bloom :check_invariants do
     stdio <~ err {|e| raise BadInvariantError, "op = #{e}" }
 
-    # Check that pre reference exists
-    err <= (insert_ops * insert_ops).outer(:pre => :id) do |i, pad|
-      if i.pre != pad.id
-        i unless [START_DOC, END_DOC].include? i.id
-      end
-    end
-
-    # Check that post reference exists
-    err <= (insert_ops * insert_ops).outer(:post => :id) do |i, pad|
-      if i.post != pad.id
-        i unless [START_DOC, END_DOC].include? i.id
-      end
-    end
+    # Check that pre and post refs exist
+    missing_ref <= insert_ops.notin(insert_ops, :pre => :id)
+    missing_ref <= insert_ops.notin(insert_ops, :post => :id)
+    err <= missing_ref {|r| r unless [START_DOC, END_DOC].include? r.id}
 
     # Check that pre < post (redundant with acyclicity?)
 
