@@ -48,7 +48,7 @@ class Reachable
     # Check that constraint graph is connected
   end
 
-  def viz_graph
+  def emit_viz
     g = GraphViz.new(:G, :type => :digraph, :rankdir => "LR")
     constraints.each do |c|
       sg = case c.id
@@ -68,22 +68,3 @@ class Reachable
     g.output(:pdf => "reachable.pdf")
   end
 end
-
-r = Reachable.new
-r.constraints <+ [["1", BEGIN_ID, END_ID],
-                  ["2", BEGIN_ID, END_ID],
-                  ["3", BEGIN_ID, "1"],
-                  ["4", "3", "1"]]
-r.tick
-r.viz_graph
-
-# puts r.reach_pre.to_a.sort.inspect
-# puts r.reach_post.to_a.sort.inspect
-
-m = r.reach_set.current_value.reveal
-m.keys.sort.each do |k|
-  puts "#{k} => #{m[k].reveal.sort}"
-end
-
-puts r.bad_pre.to_a.inspect
-puts r.bad_post.to_a.inspect
