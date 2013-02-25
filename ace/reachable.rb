@@ -12,6 +12,12 @@ class Reachable
     # The constraint that the given ID must follow the "pre" node and precede
     # the "post" node.
     table :constraints, [:id] => [:pre, :post]
+    scratch :u_constraints, constraints.schema  # User constraints; omit sentinels
+
+    # Alternative graph representation: [:from, :to] means that "from" must
+    # precede "to".
+    scratch :hasse, [:from, :to]
+    scratch :hasse_tc, [:from, :to]
 
     scratch :reach_pre, [:from, :to]
     scratch :reach_post, [:from, :to]
@@ -20,6 +26,7 @@ class Reachable
 
     scratch :bad_pre, constraints.schema
     scratch :bad_post, constraints.schema
+    scratch :cycle, [:id]
   end
 
   bootstrap do
@@ -27,7 +34,11 @@ class Reachable
                     [END_ID, BEGIN_ID, nil]]
   end
 
-  bloom do
+  bloom :user_constraints do
+    u_constraints <= constraints {|c| c unless [BEGIN_ID, END_ID].include? c.id}
+  end
+
+  bloom :reach_set do
     reach_pre <= constraints {|c| [c.id, c.id]}
     reach_pre <= (reach_pre * constraints).pairs(:to => :id) {|r,c| [r.from, c.pre] unless c.pre.nil?}
 
@@ -38,12 +49,21 @@ class Reachable
     reach_set <= reach_post {|r| {r.from => Bud::SetLattice.new([r.to])} unless r.from == r.to}
   end
 
+  bloom :hasse do
+    hasse <= constraints {|c| [c.pre, c.id] unless c.pre.nil?}
+    hasse <= constraints {|c| [c.id, c.post] unless c.post.nil?}
+
+    hasse_tc <= hasse {|h| [h.from, h.to]}
+    hasse_tc <= (hasse_tc * hasse).pairs(:to => :from) {|t,h| [t.from, h.to]}
+  end
+
   bloom :integrity do
     # Check that constraints reference extant nodes
-    bad_pre <= constraints.notin(constraints, :pre => :id)
-    bad_post <= constraints.notin(constraints, :post => :id)
+    bad_pre <= u_constraints.notin(constraints, :pre => :id)
+    bad_post <= u_constraints.notin(constraints, :post => :id)
 
     # Check that constraint graph is acyclic
+    cycle <= hasse_tc {|h| [h.from] if h.from == h.to}
 
     # Check that constraint graph is connected
   end

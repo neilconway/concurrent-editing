@@ -21,6 +21,38 @@ class ReachableTest < MiniTest::Unit::TestCase
     rv = r.reach_set.current_value.reveal
     rset = hash_map(rv) {|v| v.reveal}
     assert_equal(expected, rset)
+    check_invariants(r)
+  end
+
+  def test_bad_pre
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", BEGIN_ID, END_ID],
+                      ["3", "4", END_ID]]
+    r.tick
+    assert_equal([["3", "4", END_ID]], r.bad_pre.to_a)
+    check_invariants(r, :bad_pre)
+  end
+
+  def test_bad_post
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", BEGIN_ID, END_ID],
+                      ["3", END_ID, "4"]]
+    r.tick
+    assert_equal([["3", END_ID, "4"]], r.bad_post.to_a)
+    check_invariants(r, :bad_post)
+  end
+
+  def test_simple_cycle
+  end
+
+  def check_invariants(r, *skip)
+    to_check = [:bad_pre, :bad_post, :cycle] - skip
+
+    to_check.each do |t|
+      assert_equal([], r.send(t).to_a, "expected '#{t}' to be empty")
+    end
   end
 
   # Like Enumerable#map, but map from Hash -> Hash rather than Hash -> Array.
