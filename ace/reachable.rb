@@ -68,7 +68,7 @@ class Reachable
     # Check that constraint graph is connected
   end
 
-  def emit_viz
+  def emit_viz(fname="constraint_graph")
     g = GraphViz.new(:G, :type => :digraph, :rankdir => "LR")
     constraints.each do |c|
       sg = case c.id
@@ -85,6 +85,25 @@ class Reachable
       g.add_edges(c.id, c.post, :label => "Post") if c.post
     end
 
-    g.output(:pdf => "reachable.pdf")
+    g.output(:pdf => "#{fname}.pdf")
+  end
+
+  def emit_hasse_viz(fname="hesse_graph")
+    g = GraphViz.new(:G, :type => :digraph, :rankdir => "LR")
+    hasse.each do |h|
+      sg = case h.from
+           when BEGIN_ID
+             g.add_graph(h.from, :rank => "source")
+           when END_ID
+             g.add_graph(h.from, :rank => "sink")
+           else
+             g
+           end
+
+      sg.add_nodes(h.from)
+      sg.add_edges(h.from, h.to)
+    end
+
+    g.output(:pdf => "#{fname}.pdf")
   end
 end
