@@ -38,13 +38,59 @@ class ReachableTest < MiniTest::Unit::TestCase
     r = Reachable.new
     r.constraints <+ [["1", BEGIN_ID, END_ID],
                       ["2", BEGIN_ID, END_ID],
-                      ["3", END_ID, "4"]]
+                      ["3", BEGIN_ID, "4"]]
     r.tick
-    assert_equal([["3", END_ID, "4"]], r.bad_post.to_a)
+    assert_equal([["3", BEGIN_ID, "4"]], r.bad_post.to_a)
     check_invariants(r, :bad_post)
   end
 
+  def test_before_start
+    r = Reachable.new
+    r.constraints <+ [["1", END_ID, BEGIN_ID]]
+    r.tick
+    assert_equal([["1"], [END_ID], [BEGIN_ID]].sort, r.cycle.to_a.sort)
+    check_invariants(r, :cycle)
+  end
+
   def test_simple_cycle
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", "1", END_ID],
+                      ["3", "2", "1"]]
+    r.tick
+    assert_equal([["1"], ["2"], ["3"]], r.cycle.to_a.sort)
+    check_invariants(r, :cycle)
+  end
+
+  def test_indirect_cycle
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", "1", END_ID],
+                      ["3", "2", END_ID],
+                      ["4", "3", END_ID],
+                      ["5", "4", "1"]]
+    r.tick
+    assert_equal([["1"], ["2"], ["3"], ["4"], ["5"]], r.cycle.to_a.sort)
+    check_invariants(r, :cycle)
+  end
+
+  def test_disconnected_cycle
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", "3", "4"],
+                      ["3", "4", "2"],
+                      ["4", "2", "3"]]
+    r.tick
+    assert_equal([["2"], ["3"], ["4"]], r.cycle.to_a.sort)
+    check_invariants(r, :cycle)
+  end
+
+  def test_self_cycle
+    r = Reachable.new
+    r.constraints <+ [["1", "1", END_ID]]
+    r.tick
+    assert_equal([["1"]], r.cycle.to_a)
+    check_invariants(r, :cycle)
   end
 
   def check_invariants(r, *skip)

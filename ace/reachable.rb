@@ -50,22 +50,33 @@ class Reachable
   end
 
   bloom :hasse do
-    hasse <= constraints {|c| [c.pre, c.id] unless c.pre.nil?}
-    hasse <= constraints {|c| [c.id, c.post] unless c.post.nil?}
+    hasse <= constraints {|c| [c.pre, c.id] unless c.id == BEGIN_ID}
+    hasse <= constraints {|c| [c.id, c.post] unless c.id == END_ID}
 
     hasse_tc <= hasse {|h| [h.from, h.to]}
     hasse_tc <= (hasse_tc * hasse).pairs(:to => :from) {|t,h| [t.from, h.to]}
   end
 
   bloom :integrity do
-    # Check that constraints reference extant nodes
+    # Check that constraints reference extant nodes, and that user constraints
+    # don't claim to be before/after the start/end sentinels, respectively.
     bad_pre <= u_constraints.notin(constraints, :pre => :id)
     bad_post <= u_constraints.notin(constraints, :post => :id)
 
     # Check that constraint graph is acyclic
     cycle <= hasse_tc {|h| [h.from] if h.from == h.to}
 
-    # Check that constraint graph is connected
+    # NB: The previous constraints imply a few additional invariants:
+    #
+    #   (1) The graph is connected, since the only nodes not allowed to have
+    #       valid pre/post constraints are the sentinels; hence, a subgraph that
+    #       is not reachable from the main graph must contain a cycle.
+    #
+    #   (2) A constraint can't claim to appear before START_ID or after END_ID;
+    #       such a constraint would imply a cycle.
+    #
+    #   (3) A constraint can't reference itself as its own pre/post pointer;
+    #      such a constraint is a trivial cycle.
   end
 
   def emit_viz(fname="constraint_graph")
@@ -88,7 +99,7 @@ class Reachable
     g.output(:pdf => "#{fname}.pdf")
   end
 
-  def emit_hasse_viz(fname="hesse_graph")
+  def emit_hasse_viz(fname="hasse_graph")
     g = GraphViz.new(:G, :type => :digraph, :rankdir => "LR")
     hasse.each do |h|
       sg = case h.from
