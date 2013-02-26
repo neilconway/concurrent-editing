@@ -40,10 +40,10 @@ class Reachable
 
   bloom :reach_set do
     reach_pre <= constraints {|c| [c.id, c.id]}
-    reach_pre <= (reach_pre * constraints).pairs(:to => :id) {|r,c| [r.from, c.pre] unless c.pre.nil?}
+    reach_pre <= (reach_pre * constraints).pairs(:to => :id) {|r,c| [r.from, c.pre] unless c.id == BEGIN_ID}
 
     reach_post <= constraints {|c| [c.id, c.id]}
-    reach_post <= (reach_post * constraints).pairs(:to => :id) {|r,c| [r.from, c.post] unless c.post.nil?}
+    reach_post <= (reach_post * constraints).pairs(:to => :id) {|r,c| [r.from, c.post] unless c.id == END_ID}
 
     reach_set <= reach_pre {|r| {r.from => Bud::SetLattice.new([r.to])} unless r.from == r.to}
     reach_set <= reach_post {|r| {r.from => Bud::SetLattice.new([r.to])} unless r.from == r.to}
