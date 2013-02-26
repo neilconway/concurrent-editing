@@ -2,7 +2,8 @@ require_relative 'test_common'
 require_relative '../reachable'
 
 class Hash
-  # Like Enumerable#map, but map from Hash -> Hash rather than Hash -> Array.
+  # Like Enumerable#map, but map from Hash -> Hash rather than Enumerable ->
+  # Array, and only yield values.
   def hmap
     result = {}
     self.each_pair do |k,v|
@@ -15,7 +16,6 @@ class Hash
     hmap {|v| v.send(sym)}
   end
 end
-
 
 class ReachableTest < MiniTest::Unit::TestCase
   def test_basic_rset
