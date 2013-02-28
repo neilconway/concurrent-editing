@@ -45,11 +45,11 @@ end
 
 
 class LatticeDocGUI
-  def initialize(site_id, server)
+  def initialize(site_id)
     @site_id = site_id.to_i
-    @server = server
+    @server = nil
     @lmap = Bud::MapLattice.new()
-    @c = Client.new(@site_id, @server)
+    @c = nil
     @table = Hash.new()
     @textview
     @time = 0
@@ -57,6 +57,40 @@ class LatticeDocGUI
   end
 
   def run
+    run_set_up()
+    #run_editor()
+  end
+
+  def run_set_up
+    window = Gtk::Window.new(Gtk::Window::TOPLEVEL)
+    window.set_title  "Set up server"
+    window.border_width = 10
+    window.signal_connect('delete_event') { Gtk.main_quit }
+  
+    entry_label_server = Gtk::Label.new("Server:")
+
+    server = Gtk::Entry.new
+    connect = Gtk::Button.new("Connect")
+
+    hbox = Gtk::HBox.new(false, 5)
+    hbox.pack_start_defaults(entry_label_server)
+    hbox.pack_start_defaults(server)
+    hbox.pack_start_defaults(connect)
+    vbox = Gtk::VBox.new(false, 5)
+    vbox.pack_start_defaults(hbox)
+
+    connect.signal_connect("clicked") do |b|
+      @server = server.text
+      @c = Client.new(@site_id, @server)
+      run_editor()
+      
+    end
+
+    window.add(vbox)
+    window.show_all
+  end
+
+  def run_editor
     @c.run_bg
     window = Gtk::Window.new(Gtk::Window::TOPLEVEL)
     window.resizable = true
@@ -65,7 +99,8 @@ class LatticeDocGUI
     window.signal_connect('delete_event') { Gtk.main_quit }
     window.set_size_request(600, -1)
 
-    ed = LatticeDocGUI.new(@site_id, @server)
+    p @server
+    ed = LatticeDocGUI.new(@site_id)
     @textview = Gtk::TextView.new
 
 
@@ -150,9 +185,10 @@ end
 
 
 if __FILE__ == $0
-  server = (ARGV.length == 2) ? ARGV[1] : LatticeDocProtocol::DEFAULT_ADDR
-  puts "Server address: #{server}"
-  program = LatticeDocGUI.new(ARGV[0], server)
+  #server = (ARGV.length == 2) ? ARGV[1] : LatticeDocProtocol::DEFAULT_ADDR
+  #puts "Server address: #{server}"
+  #program = LatticeDocGUI.new(ARGV[0], server)
+  program = LatticeDocGUI.new(ARGV[0])
   program.run
   Gtk.main
 end

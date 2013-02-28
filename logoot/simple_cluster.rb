@@ -8,7 +8,8 @@ serv = LatticeDocServer.new(:ip => ip, :port => port.to_i)
 serv.run_bg
 
 ["1", "2"].each do |client_id|
-  c = LatticeDocGUI.new(client_id, LatticeDocProtocol::DEFAULT_ADDR)
+  #c = LatticeDocGUI.new(client_id, LatticeDocProtocol::DEFAULT_ADDR)
+  c = LatticeDocGUI.new(client_id)
   c.run
 end
 Gtk.main
