@@ -8,13 +8,20 @@ class LatticeDocServer
   include Bud
   include LatticeDocProtocol
 
-  state { table :nodelist }
+  state do
+    table :doc_list, [:doc_name] => [:doc_lmap]
+    table :nodelist
+  end
 
   bloom do
     stdio <~ connect {|c| ["New client: #{c.source_addr}"]}
     stdio <~ to_server {|m| ["Msg @ server: #{m.inspect}"]}
     nodelist <= connect {|c| [c.source_addr]}
-    to_host <~ (to_server * nodelist).pairs {|m,n| [n.key, m.val]}
+    doc_list <= new_doc_to_server {|n| [n.val, nil]}
+    list_of_docs_to_client <~ (connect * doc_list).combos do |c, d| [c.source_addr, d.doc_name] end
+    to_host <~ (select_doc_to_server * doc_list).pairs(select_doc_to_server.doc_name => doc_list.doc_name) { |s, d| [s.source_addr, d.doc_name, d.doc_lmap]}
+    doc_list <+- to_server {|t| [t.doc_name, t.val]}
+    to_host <~ (to_server * doc_list * nodelist).pairs(to_server.doc_name => doc_list.doc_name) {|t, d, n| [n.key, d.doc_name, t.val]}
   end
 end
 

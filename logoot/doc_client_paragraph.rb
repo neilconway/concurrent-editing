@@ -15,12 +15,16 @@ class Client
   def initialize(client_id, server, opts={})
     @client_id = client_id
     @server = server
+    @current_doc = nil
     super opts
   end
 
   state do
     scratch :delta_m, [] => [:val]
+    scratch :new_doc, [] => [:val]
+    scratch :doc, [] => [:val]
     lmap :m
+    table :my_docs
   end
 
   bootstrap do
@@ -28,10 +32,12 @@ class Client
   end
 
   bloom do
-    #stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
-    m <= to_host {|h| h.val}
-
-    to_server <~ delta_m {|t| [@server, ip_port, t.val]}
+    stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
+    my_docs <= list_of_docs_to_client {|c| [c.val]}
+    new_doc_to_server <~ new_doc {|n| [@server, ip_port, n.val]}
+    select_doc_to_server <~ doc {|d| [@server, ip_port, d.val]}
+    m <= to_host {|h| h.val if h.doc_name == @current_doc}
+    to_server <~ delta_m {|t| [@server, ip_port, @current_doc, t.val]}
     m <= delta_m {|t| t.val}
   end
 
@@ -39,6 +45,22 @@ class Client
     #puts "send_update: #{v.inspect}"
     sync_do {
       delta_m <+ [[v]]
+    }
+  end
+
+  def create_new_doc(name)
+    sync_do {
+      new_doc <+ [[name]]
+    }
+  end
+
+  def set_current_doc(name)
+    @current_doc = name
+  end
+
+  def pick_existing_doc(name)
+     sync_do {
+      doc <+ [[name]]
     }
   end
 end
@@ -54,6 +76,8 @@ class LatticeDocGUI
     @textview
     @time = 0
     @pulled = false
+    @docs = []
+    @current_doc
   end
 
   def run
@@ -82,16 +106,58 @@ class LatticeDocGUI
     connect.signal_connect("clicked") do |b|
       @server = server.text
       @c = Client.new(@site_id, @server)
-      run_editor()
-      
+      @c.run_bg
+      run_pick_doc()
+      #run_editor()
+
     end
 
     window.add(vbox)
     window.show_all
   end
 
+  def run_pick_doc
+    window = Gtk::Window.new(Gtk::Window::TOPLEVEL)
+    window.title = "Pick your document"
+    flag = false
+
+    # THIS IS WAY TOO HACKY!
+    sleep(1)
+
+    refresh_doc_list()
+
+    cb = Gtk::ComboBox.new
+    for doc in @docs
+      cb.append_text(doc[0])
+    end
+    select_existing = Gtk::Button.new("Select existing document")
+    create = Gtk::Button.new("Create new document")
+    new_doc_name = Gtk::Entry.new
+    create.signal_connect("clicked") do |c|
+      @current_doc = new_doc_name.text
+      @c.create_new_doc(@current_doc)
+      @c.set_current_doc(@current_doc)
+      run_editor()
+    end
+    select_existing.signal_connect("clicked") do |s|
+      @current_doc = cb.active_text
+      @c.set_current_doc(@current_doc)
+      @c.pick_existing_doc(@current_doc)
+      run_editor()
+    end
+    hbox = Gtk::HBox.new(false, 5)
+    hbox.pack_start_defaults(cb)
+    hbox.pack_start_defaults(select_existing)
+    hbox.pack_start_defaults(new_doc_name)
+    hbox.pack_start_defaults(create)
+    vbox = Gtk::VBox.new(false, 5)
+    vbox.pack_start_defaults(hbox)
+    window.add(vbox)
+    window.show_all
+  end
+
   def run_editor
-    @c.run_bg
+    #@c.run_bg
     window = Gtk::Window.new(Gtk::Window::TOPLEVEL)
     window.resizable = true
     window.title = "Simple Text Editor"
@@ -179,6 +245,12 @@ class LatticeDocGUI
   def refresh_lmap()
     @c.sync_do {
       @lmap = @c.m.current_value
+    }
+  end
+
+  def refresh_doc_list()
+    @c.sync_do {
+      @docs = @c.my_docs.keys
     }
   end
 end
