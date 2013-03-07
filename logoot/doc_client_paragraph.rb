@@ -34,6 +34,7 @@ class Client
   bloom do
     stdio <~ to_host {|h| ["Message @ client #{@client_id}: #{h.inspect}"]}
     my_docs <= list_of_docs_to_client {|c| [c.val]}
+    stdio <~ my_docs.inspected
     new_doc_to_server <~ new_doc {|n| [@server, ip_port, n.val]}
     select_doc_to_server <~ doc {|d| [@server, ip_port, d.val]}
     m <= to_host {|h| h.val if h.doc_name == @current_doc}
@@ -127,9 +128,21 @@ class LatticeDocGUI
     refresh_doc_list()
 
     cb = Gtk::ComboBox.new
-    for doc in @docs
-      cb.append_text(doc[0])
+    #p @docs
+    #@docs.flatten
+    #p @docs
+
+    for doc in @c.my_docs.keys
+      flat_doc = doc.flatten
+      p flat_doc
+      for name in flat_doc
+        p name
+        if flat_doc.length > 0
+          cb.append_text(name)
+        end
+      end
     end
+
     select_existing = Gtk::Button.new("Select existing document")
     create = Gtk::Button.new("Create new document")
     new_doc_name = Gtk::Entry.new
