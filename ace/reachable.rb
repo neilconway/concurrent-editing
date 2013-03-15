@@ -27,6 +27,10 @@ class Reachable
     scratch :bad_pre, constraints.schema
     scratch :bad_post, constraints.schema
     scratch :cycle, [:id]
+
+    # Output: a set of <a,b> pairs for all a,b \in constraints; [a,b] means that
+    # a comes before b in the total order.
+    scratch :orders, [:a, :b]
   end
 
   bootstrap do
@@ -77,6 +81,29 @@ class Reachable
     #
     #   (3) A constraint can't reference itself as its own pre/post pointer;
     #      such a constraint is a trivial cycle.
+  end
+
+  bloom :compute_orders do
+    orders <= (constraints * constraints).pairs do |c1,c2|
+      unless c1 == c2
+        find_order(c1.id, c2.id, reach_set.at(c1.id), reach_set.at(c2.id))
+      end
+    end
+    # HACK: make sure we push "orders" into a higher strata
+    orders <= constraints.notin(constraints, :id => :id)
+  end
+
+  def find_order(a, b, a_rset, b_rset)
+#    puts "find_order: a = #{a}, b = #{b}, a_rset = #{a_rset.inspect}, b_rset = #{b_rset}"
+    a_rset = a_rset.reveal
+    b_rset = b_rset.reveal
+    if hasse_tc.has_key? [a,b]
+      return [a,b]
+    elsif hasse_tc.has_key? [b,a]
+      return [b,a]
+    else
+      return [0, 0]
+    end
   end
 
   def emit_viz(fname="constraint_graph")

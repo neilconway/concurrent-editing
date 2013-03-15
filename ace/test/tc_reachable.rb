@@ -117,4 +117,25 @@ class ReachableTest < MiniTest::Unit::TestCase
       assert_equal([], r.send(t).to_a, "expected '#{t}' to be empty")
     end
   end
+
+  # A simple linearization example: only one linearization is consistent with
+  # (and hence implied by) the user's constraints.
+  def test_basic_order
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", "1", END_ID],
+                      ["3", "2", END_ID]]
+    r.tick
+    assert_equal([[BEGIN_ID, "1"],
+                  [BEGIN_ID, "2"],
+                  [BEGIN_ID, "3"],
+                  [BEGIN_ID, END_ID],
+                  ["1", "2"],
+                  ["1", "3"],
+                  ["1", END_ID],
+                  ["2", "3"],
+                  ["2", END_ID],
+                  ["3", END_ID]].sort, r.orders.to_a.sort)
+    check_invariants(r)
+  end
 end
