@@ -80,7 +80,7 @@ class Reachable
     #       such a constraint would imply a cycle.
     #
     #   (3) A constraint can't reference itself as its own pre/post pointer;
-    #      such a constraint is a trivial cycle.
+    #       such a constraint is a trivial cycle.
   end
 
   bloom :compute_orders do
@@ -101,8 +101,12 @@ class Reachable
       return [a,b]
     elsif hasse_tc.has_key? [b,a]
       return [b,a]
+    elsif a < b
+      return [a,b]
+    elsif b < a
+      return [b,a]
     else
-      return [0, 0]
+      raise
     end
   end
 

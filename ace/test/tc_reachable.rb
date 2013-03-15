@@ -138,4 +138,21 @@ class ReachableTest < MiniTest::Unit::TestCase
                   ["3", END_ID]].sort, r.orders.to_a.sort)
     check_invariants(r)
   end
+
+  # First ambiguous case. Both [1,2] and [2,1] would be consistent with the
+  # user's constraints, so we need to pick a winner. For this simple scenario,
+  # breaking ties using the minimum atom ID is sufficient.
+  def test_order_ambig1
+    r = Reachable.new
+    r.constraints <+ [["1", BEGIN_ID, END_ID],
+                      ["2", BEGIN_ID, END_ID]]
+    r.tick
+    assert_equal([[BEGIN_ID, "1"],
+                  [BEGIN_ID, "2"],
+                  [BEGIN_ID, END_ID],
+                  ["1", "2"],
+                  ["1", END_ID],
+                  ["2", END_ID]].sort, r.orders.to_a.sort)
+    check_invariants(r)
+  end
 end
