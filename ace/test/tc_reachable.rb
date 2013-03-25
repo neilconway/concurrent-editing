@@ -18,7 +18,7 @@ class Hash
 end
 
 class ReachableTest < MiniTest::Unit::TestCase
-  def test_basic_rset
+  def test_rset_basic
     r = Reachable.new
     r.constraints <+ [["1", BEGIN_ID, END_ID],
                       ["2", BEGIN_ID, END_ID],
@@ -31,6 +31,26 @@ class ReachableTest < MiniTest::Unit::TestCase
       "2" => [BEGIN_ID, END_ID],
       "3" => [BEGIN_ID, END_ID, "1"],
       "4" => [BEGIN_ID, END_ID, "3", "1"],
+      BEGIN_ID => [END_ID],
+      END_ID => [BEGIN_ID]
+    }
+    rv = r.reach_set.current_value.reveal
+    rset = rv.happly(:reveal)
+    expected = expected.happly(:to_set)
+    assert_equal(expected, rset)
+    check_invariants(r)
+  end
+
+  def test_rset_proper_tc
+    r = Reachable.new
+    r.constraints <+ [["x", BEGIN_ID, "y"],
+                      ["z", "x", END_ID],
+                      ["y", BEGIN_ID, END_ID]]
+    r.tick
+    expected = {
+      "y" => [BEGIN_ID, END_ID],
+      "x" => [BEGIN_ID, END_ID, "y"],
+      "z" => [BEGIN_ID, END_ID, "x", "y"],
       BEGIN_ID => [END_ID],
       END_ID => [BEGIN_ID]
     }
