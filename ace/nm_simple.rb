@@ -15,7 +15,7 @@ class SimpleNmLinear
     scratch :u_constr, constr.schema    # Non-sentinal constraints
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
 
-    # Output: the computed linearization of the DAG.
+    # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]
     scratch :before_tc, [:from, :to]
 
@@ -32,7 +32,7 @@ class SimpleNmLinear
     scratch :implied_parent, [:from, :to]
     scratch :implied_parent_in, [:x, :y]
 
-    # Semantic causal history; we have [from, to] if "from" happens before "to".
+    # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
     scratch :sem_hist_prod, [:x_from, :x_to, :y_from, :y_to]
   end
@@ -50,11 +50,11 @@ class SimpleNmLinear
   bloom :compute_sem_hist do
     sem_hist <= constr {|c| [c.id, c.pre] unless c.id == BEGIN_ID}
     sem_hist <= constr {|c| [c.id, c.post] unless c.id == END_ID}
-    sem_hist <= (sem_hist * u_constr).pairs(:to => :id) do |r,c|
-      [r.from, c.pre]
+    sem_hist <= (sem_hist * constr).pairs(:to => :id) do |r,c|
+      [r.from, c.pre] unless c.id == BEGIN_ID
     end
-    sem_hist <= (sem_hist * u_constr).pairs(:to => :id) do |r,c|
-      [r.from, c.post]
+    sem_hist <= (sem_hist * constr).pairs(:to => :id) do |r,c|
+      [r.from, c.post] unless c.id == END_ID
     end
     sem_hist_prod <= (sem_hist * sem_hist).pairs do |h1,h2|
       [h1.from, h1.to, h2.from, h2.to]
