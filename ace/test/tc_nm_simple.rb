@@ -12,9 +12,27 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     assert_equal([], s.implied_parent.to_a)
   end
 
-  def test_explicit_simple
+  def test_fail_nil_pre
     s = SimpleNmLinear.new
-    s.tick
+    s.constr <+ [[1, nil, END_ID]]
+    assert_raises(InvalidDocError) { s.tick }
+  end
+
+  def test_fail_nil_post
+    s = SimpleNmLinear.new
+    s.constr <+ [[1, BEGIN_ID, nil]]
+    assert_raises(InvalidDocError) { s.tick }
+  end
+
+  def test_fail_cycle
+    s = SimpleNmLinear.new
+    s.constr <+ [[1, BEGIN_ID, END_ID],
+                 [2, 1, END_ID],
+                 [3, 2, 1]]
+    assert_raises(InvalidDocError) { s.tick }
+  end
+
+  def test_explicit_simple
   end
 
   def test_tiebreak_simple

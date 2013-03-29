@@ -11,6 +11,8 @@ end
 BEGIN_ID = Float::INFINITY
 END_ID = -Float::INFINITY
 
+class InvalidDocError < StandardError; end
+
 # TODO: add-back integrity constraints
 class SimpleNmLinear
   include Bud
@@ -29,6 +31,7 @@ class SimpleNmLinear
 
     # Explicit orderings
     scratch :explicit, [:from, :to]
+    scratch :explicit_tc, [:from, :to]
 
     # Tie-breaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
@@ -43,6 +46,9 @@ class SimpleNmLinear
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
     scratch :sem_hist_prod, [:x_from, :x_to, :y_from, :y_to]
+
+    # Invalid document state
+    scratch :doc_fail, [:err]
   end
 
   bootstrap do
@@ -76,12 +82,15 @@ class SimpleNmLinear
   bloom :compute_candidates do
     explicit <= pre_constr {|c| [c.pre, c.id]}
     explicit <= post_constr {|c| [c.id, c.post]}
+    explicit_tc <= explicit
+    explicit_tc <= (explicit_tc * explicit).pairs(:to => :from) {|t,c| [t.from, c.to]}
 
     tie_break <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
     implied_parent_in <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
       [c.x, c.y] unless explicit.include? [c.x, c.y]
     end
+    # XXX: Duplicating the tie-breaking logic here is unfortunate.
     implied_parent <= implied_parent_in {|i| i if i.x < i.y}
   end
 
@@ -94,5 +103,23 @@ class SimpleNmLinear
     before <= explicit
     before <= implied_parent.notin(explicit, :from => :to, :to => :from)
     before <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit, :from => :to, :to => :from)
+  end
+
+  bloom :check_valid do
+    stdio <~ doc_fail {|e| raise InvalidDocError, e.inspect }
+
+    # Only sentinels can have nil pre/post edges
+    doc_fail <= constr {|c| [c] if c.pre.nil? && c.id != BEGIN_ID && c.id != END_ID}
+    doc_fail <= constr {|c| [c] if c.post.nil? && c.id != END_ID}
+
+    # Constraint graph should be acyclic
+    doc_fail <= explicit_tc {|c| [c] if c.from == c.to}
+
+    # Note that the above rules ensure that BEGIN is not a post edge and END is
+    # not a pre edge of any constraint; this would imply either a cycle or a nil
+    # edge.
+
+    # Not yet enforced: at originating site, pre/post edges should be adjacent
+    # at the time a new constraint is added.
   end
 end
