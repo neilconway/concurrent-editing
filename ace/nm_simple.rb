@@ -65,13 +65,13 @@ class SimpleNmLinear
   end
 
   bloom :compute_sem_hist do
-    sem_hist <= pre_constr {|c| [c.id, c.pre]}
-    sem_hist <= post_constr {|c| [c.id, c.post]}
-    sem_hist <= (sem_hist * pre_constr).pairs(:to => :id) do |r,c|
-      [r.from, c.pre]
+    sem_hist <= pre_constr {|c| [c.pre, c.id]}
+    sem_hist <= post_constr {|c| [c.post, c.id]}
+    sem_hist <= (sem_hist * pre_constr).pairs(:from => :id) do |r,c|
+      [c.pre, r.to]
     end
-    sem_hist <= (sem_hist * post_constr).pairs(:to => :id) do |r,c|
-      [r.from, c.post]
+    sem_hist <= (sem_hist * post_constr).pairs(:from => :id) do |r,c|
+      [c.post, r.to]
     end
     sem_hist_prod <= (sem_hist * sem_hist).pairs do |h1,h2|
       [h1.from, h1.to, h2.from, h2.to]
@@ -101,8 +101,8 @@ class SimpleNmLinear
     before_tc <= (before_tc * before).pairs(:to => :from) {|t,b| [t.from, b.to]}
 
     before <= explicit
-    before <= implied_parent.notin(explicit, :from => :to, :to => :from)
-    before <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit, :from => :to, :to => :from)
+    before <= implied_parent.notin(explicit_tc, :from => :to, :to => :from)
+    before <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
   end
 
   bloom :check_valid do
