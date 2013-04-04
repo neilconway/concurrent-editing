@@ -7,7 +7,7 @@ unless defined? Float::INFINITY
 end
 
 # Sentinel edit IDs. Note that the tiebreaker for sentinels should never be
-# used, so to test this we have BEGIN_ID > END_ID.
+# used so the actual value of the sentinels is not important.
 BEGIN_ID = Float::INFINITY
 END_ID = -Float::INFINITY
 
@@ -27,6 +27,7 @@ class SimpleNmLinear
 
     # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]
+    scratch :before_src, [:from, :to, :src]
     scratch :before_tc, [:from, :to]
 
     # Explicit orderings
@@ -41,7 +42,6 @@ class SimpleNmLinear
     # Orderings implied by considering orderings between the semantic causal
     # history ("parents") of the edits from,to
     scratch :implied_parent, [:from, :to]
-    scratch :implied_parent_in, [:x, :y]
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
@@ -87,11 +87,12 @@ class SimpleNmLinear
 
     tie_break <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
-    implied_parent_in <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
-      [c.x, c.y] unless explicit.include? [c.x, c.y]
+    implied_parent <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
+      unless explicit.include? [c.x, c.y]
+        # XXX: Duplicating the tie-breaking logic here is unfortunate.
+        [c.x, c.y] if c.x < c.y
+      end
     end
-    # XXX: Duplicating the tie-breaking logic here is unfortunate.
-    implied_parent <= implied_parent_in {|i| i if i.x < i.y}
   end
 
   # Combine explicit, implied_parent, and tie_break to get the final
@@ -101,8 +102,11 @@ class SimpleNmLinear
     before_tc <= (before_tc * before).pairs(:to => :from) {|t,b| [t.from, b.to]}
 
     before <= explicit
+    before_src <= explicit {|c| c + ["explicit"]}
     before <= implied_parent.notin(explicit_tc, :from => :to, :to => :from)
+    before_src <= implied_parent.notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["implied"]}
     before <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
+    before_src <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["tiebreak"]}
   end
 
   bloom :check_valid do
@@ -119,7 +123,11 @@ class SimpleNmLinear
     # not a pre edge of any constraint; this would imply either a cycle or a nil
     # edge.
 
-    # Not yet enforced: at originating site, pre/post edges should be adjacent
-    # at the time a new constraint is added.
+    # XXX, not yet enforced: at originating site, pre/post edges should be
+    # adjacent at the time a new constraint is added.
+
+    # XXX, not yet enforced: constraints on output linearization. (Unlike the
+    # input constraints, these are just checking the correctness of the
+    # algorithm, not whether the input is legal.)
   end
 end
