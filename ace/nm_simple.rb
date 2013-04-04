@@ -39,9 +39,9 @@ class SimpleNmLinear
     # is available.
     scratch :tie_break, [:from, :to]
 
-    # Orderings implied by considering orderings between the semantic causal
-    # history ("parents") of the edits from,to
-    scratch :implied_parent, [:from, :to]
+    # Orderings implied by considering tiebreaks between the semantic causal
+    # history ("ancestors") of the edits from,to
+    scratch :implied_anc, [:from, :to]
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
@@ -78,7 +78,7 @@ class SimpleNmLinear
     end
   end
 
-  # Compute each of explicit, implied_parent, and tie_break.
+  # Compute each of explicit, implied_anc, and tie_break.
   bloom :compute_candidates do
     explicit <= pre_constr {|c| [c.pre, c.id]}
     explicit <= post_constr {|c| [c.id, c.post]}
@@ -87,7 +87,7 @@ class SimpleNmLinear
 
     tie_break <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
-    implied_parent <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
+    implied_anc <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
       unless explicit.include? [c.x, c.y]
         # XXX: Duplicating the tie-breaking logic here is unfortunate.
         [c.x, c.y] if c.x < c.y
@@ -95,7 +95,7 @@ class SimpleNmLinear
     end
   end
 
-  # Combine explicit, implied_parent, and tie_break to get the final
+  # Combine explicit, implied_anc, and tie_break to get the final
   # linearization.
   bloom :compute_final do
     before_tc <= before
@@ -103,10 +103,10 @@ class SimpleNmLinear
 
     before <= explicit
     before_src <= explicit {|c| c + ["explicit"]}
-    before <= implied_parent.notin(explicit_tc, :from => :to, :to => :from)
-    before_src <= implied_parent.notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["implied"]}
-    before <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
-    before_src <= tie_break.notin(implied_parent, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["tiebreak"]}
+    before <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
+    before_src <= implied_anc.notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["implied"]}
+    before <= tie_break.notin(implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
+    before_src <= tie_break.notin(implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["tiebreak"]}
   end
 
   bloom :check_valid do
