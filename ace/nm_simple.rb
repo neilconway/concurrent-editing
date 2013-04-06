@@ -13,7 +13,6 @@ END_ID = -Float::INFINITY
 
 class InvalidDocError < StandardError; end
 
-# TODO: add-back integrity constraints
 class SimpleNmLinear
   include Bud
 
@@ -22,30 +21,29 @@ class SimpleNmLinear
     # precede the "post" node. This encodes a DAG.
     table :constr, [:id] => [:pre, :post]
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
-    scratch :pre_constr, constr.schema  # Constraints with valid "pre" edge
-    scratch :post_constr, constr.schema # Constraints with valid "post" edge
+    scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
+    scratch :post_constr, constr.schema # Constraints with a valid "post" edge
 
     # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]
-    scratch :before_src, [:from, :to, :src]
-    scratch :before_tc, [:from, :to]
 
     # Explicit orderings
     scratch :explicit, [:from, :to]
     scratch :explicit_tc, [:from, :to]
 
-    # Tie-breaker orderings. These are defined for all pairs a,b -- but we only
+    # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    scratch :tie_break, [:from, :to]
+    scratch :tiebreak, [:from, :to]
+    scratch :use_tiebreak, [:from, :to]
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
     scratch :implied_anc, [:from, :to]
+    scratch :use_implied_anc, [:from, :to]
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
-    scratch :sem_hist_prod, [:x_from, :x_to, :y_from, :y_to]
 
     # Invalid document state
     scratch :doc_fail, [:err]
@@ -73,40 +71,33 @@ class SimpleNmLinear
     sem_hist <= (sem_hist * post_constr).pairs(:from => :id) do |r,c|
       [c.post, r.to]
     end
-    sem_hist_prod <= (sem_hist * sem_hist).pairs do |h1,h2|
-      [h1.from, h1.to, h2.from, h2.to]
-    end
   end
 
-  # Compute each of explicit, implied_anc, and tie_break.
+  # Compute each of explicit, implied_anc, and tiebreak.
   bloom :compute_candidates do
     explicit <= pre_constr {|c| [c.pre, c.id]}
     explicit <= post_constr {|c| [c.id, c.post]}
     explicit_tc <= explicit
     explicit_tc <= (explicit_tc * explicit).pairs(:to => :from) {|t,c| [t.from, c.to]}
 
-    tie_break <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
+    tiebreak <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
-    implied_anc <= (constr_prod * sem_hist_prod).pairs(:x => :x_to, :y => :y_to) do |c,h|
-      unless explicit.include? [c.x, c.y]
-        # XXX: Duplicating the tie-breaking logic here is unfortunate.
-        [c.x, c.y] if c.x < c.y
-      end
+    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(reachable.to => use_tiebreak.before, reachable.from => explicit_tc.from, reachable.to => explicit_tc.to) do |r,t,e|
+      [r.from, t.to]
     end
+    use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
+
+    use_tiebreak <+ tiebreak.notin(use_implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
   end
 
-  # Combine explicit, implied_anc, and tie_break to get the final
-  # linearization.
+  # Combine explicit, implied_anc, and tiebreak to get the final order.
   bloom :compute_final do
     before_tc <= before
     before_tc <= (before_tc * before).pairs(:to => :from) {|t,b| [t.from, b.to]}
 
     before <= explicit
-    before_src <= explicit {|c| c + ["explicit"]}
-    before <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
-    before_src <= implied_anc.notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["implied"]}
-    before <= tie_break.notin(implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
-    before_src <= tie_break.notin(implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from).pro {|c| c + ["tiebreak"]}
+    before <= use_implied_anc
+    before <= use_tiebreak
   end
 
   bloom :check_valid do
