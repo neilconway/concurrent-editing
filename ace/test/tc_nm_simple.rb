@@ -60,13 +60,16 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   # correct outcome. Note that this scenario is essentially identical to the
   # "dOPT Puzzle" described in "Operational transformation in real-time group
   # editors: issues, algorithms, and achievements" (Sun and Ellis, CSCW'98).
-  def test_implied_parent_simple
+  def test_implied_anc_simple
     s = SimpleNmLinear.new
     s.constr <+ [[1, BEGIN_ID, END_ID],
-                 [2, BEGIN_ID, END_ID],
-                 [3, BEGIN_ID, 1]]
+                 [2, BEGIN_ID, END_ID]]
     s.tick
-    puts s.before_src.to_a.sort.inspect
+    s.tick
+    assert_equal([], s.use_implied_anc.to_a)
+
+    s.constr <+ [[3, BEGIN_ID, 1]]
+    s.tick
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
   end
 

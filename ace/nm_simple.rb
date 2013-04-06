@@ -26,6 +26,7 @@ class SimpleNmLinear
 
     # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]
+    scratch :before_tc, [:from, :to]
 
     # Explicit orderings
     scratch :explicit, [:from, :to]
@@ -82,8 +83,10 @@ class SimpleNmLinear
 
     tiebreak <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(reachable.to => use_tiebreak.before, reachable.from => explicit_tc.from, reachable.to => explicit_tc.to) do |r,t,e|
-      [r.from, t.to]
+    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.from,
+                                                                  sem_hist.to => explicit_tc.from,
+                                                                  sem_hist.from => explicit_tc.to) do |s,t,e|
+      [s.to, t.to]
     end
     use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
 
