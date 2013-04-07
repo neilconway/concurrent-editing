@@ -17,8 +17,15 @@ class SimpleNmLinear
   include Bud
 
   state do
-    # Input: the constraint that the given ID must follow the "pre" node and
-    # precede the "post" node. This encodes a DAG.
+    # Input buffer. Edit operations arrive here; once the dependencies of an
+    # edit have been delivered, the edit itself can be delivered to "constr" and
+    # removed from the buffer. In other words, the buffer ensures that
+    # (semantic) causal delivery is respected.
+    table :input_buf, [:id] => [:pre, :post]
+    scratch :to_deliver, input_buf.schema
+
+    # The constraint that the given ID must follow the "pre" node and precede
+    # the "post" node. This encodes a DAG.
     table :constr, [:id] => [:pre, :post]
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
@@ -52,9 +59,15 @@ class SimpleNmLinear
 
   bootstrap do
     # Sentinel constraints. We choose to have END be the causally first edit;
-    # then BEGIN is placed before the END. Naturally these could be reversed.
+    # then BEGIN is placed before END. Naturally these could be reversed.
     constr <+ [[BEGIN_ID, nil, END_ID],
                [END_ID, nil, nil]]
+  end
+
+  bloom :buffering do
+    to_deliver <= (input_buf * constr_prod).lefts(:pre => :x, :post => :y)
+    input_buf <- to_deliver
+    constr <+ to_deliver
   end
 
   bloom :constraints do

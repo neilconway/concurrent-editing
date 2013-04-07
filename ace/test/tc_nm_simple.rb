@@ -8,7 +8,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     check_linear_order(s, BEGIN_ID, END_ID)
     check_sem_hist(s)
     assert_equal([[BEGIN_ID, END_ID]], s.explicit.to_a)
-    assert_equal([], s.implied_parent.to_a)
+    assert_equal([], s.use_implied_anc.to_a)
   end
 
   def test_fail_nil_pre
@@ -33,9 +33,12 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
   def test_explicit_simple
     s = SimpleNmLinear.new
-    s.constr <+ [[9, BEGIN_ID, END_ID],
-                 [2, 9, END_ID],
-                 [1, 9, 2]]
+    s.input_buf <+ [[9, BEGIN_ID, END_ID],
+                    [2, 9, END_ID],
+                    [1, 9, 2]]
+    s.tick
+    s.tick
+    s.tick
     s.tick
     check_linear_order(s, BEGIN_ID, 9, 1, 2, END_ID)
     check_sem_hist(s,
@@ -46,8 +49,10 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
   def test_tiebreak_simple
     s = SimpleNmLinear.new
-    s.constr <+ [[1, BEGIN_ID, END_ID],
-                 [2, BEGIN_ID, END_ID]]
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, BEGIN_ID, END_ID]]
+    s.tick
+    s.tick
     s.tick
     check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [])
@@ -62,15 +67,22 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   # editors: issues, algorithms, and achievements" (Sun and Ellis, CSCW'98).
   def test_implied_anc_simple
     s = SimpleNmLinear.new
-    s.constr <+ [[1, BEGIN_ID, END_ID],
-                 [2, BEGIN_ID, END_ID]]
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, BEGIN_ID, END_ID],
+                    [3, BEGIN_ID, 1]]
+    # First tick: move ops 1,2 to constr @next
     s.tick
+    # Second tick: move op 3 to constr @next, process non-tiebreaks for ops 1,2
     s.tick
-    assert_equal([], s.use_implied_anc.to_a)
-
-    s.constr <+ [[3, BEGIN_ID, 1]]
+    assert_equal([[3, BEGIN_ID, 1]], s.input_buf.to_a.sort)
+    # Third tick: process tiebreaks for 1,2, non-tiebreaks for 3
     s.tick
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+
+    s.tick      # No-op
+    check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
   end
 
   def check_linear_order(b, *vals)
