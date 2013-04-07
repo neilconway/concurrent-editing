@@ -22,11 +22,15 @@ class SimpleNmLinear
     # removed from the buffer. In other words, the buffer ensures that
     # (semantic) causal delivery is respected.
     table :input_buf, [:id] => [:pre, :post]
+    scratch :input_has_pre, input_buf.schema
     scratch :to_deliver, input_buf.schema
 
     # The constraint that the given ID must follow the "pre" node and precede
-    # the "post" node. This encodes a DAG.
+    # the "post" node. This encodes a DAG. "installed" is essentially
+    # constr@prev; i.e., all the constraints that have been installed in
+    # timesteps before the current one.
     table :constr, [:id] => [:pre, :post]
+    table :installed, constr.schema
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
     scratch :post_constr, constr.schema # Constraints with a valid "post" edge
@@ -62,12 +66,16 @@ class SimpleNmLinear
     # then BEGIN is placed before END. Naturally these could be reversed.
     constr <+ [[BEGIN_ID, nil, END_ID],
                [END_ID, nil, nil]]
+    installed <+ [[BEGIN_ID, nil, END_ID],
+                  [END_ID, nil, nil]]
   end
 
   bloom :buffering do
-    to_deliver <= (input_buf * constr_prod).lefts(:pre => :x, :post => :y)
+    input_has_pre <= (input_buf * installed).lefts(:pre => :id)
+    to_deliver <= (input_has_pre * installed).lefts(:post => :id)
+    constr <= to_deliver
     input_buf <- to_deliver
-    constr <+ to_deliver
+    installed <+ constr
   end
 
   bloom :constraints do
@@ -119,9 +127,10 @@ class SimpleNmLinear
   bloom :check_valid do
     stdio <~ doc_fail {|e| raise InvalidDocError, e.inspect }
 
-    # Only sentinels can have nil pre/post edges
-    doc_fail <= constr {|c| [c] if c.pre.nil? && c.id != BEGIN_ID && c.id != END_ID}
-    doc_fail <= constr {|c| [c] if c.post.nil? && c.id != END_ID}
+    # Only sentinels can have nil pre/post edges, but those never appear in the
+    # input_buf. (Raising an error here isn't strictly necessary; such malformed
+    # inputs would never be removed from input_buf anyway.)
+    doc_fail <= input_buf {|c| [c] if c.pre.nil? || c.post.nil?}
 
     # Constraint graph should be acyclic
     doc_fail <= explicit_tc {|c| [c] if c.from == c.to}

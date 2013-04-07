@@ -13,21 +13,22 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
   def test_fail_nil_pre
     s = SimpleNmLinear.new
-    s.constr <+ [[1, nil, END_ID]]
+    s.input_buf <+ [[1, nil, END_ID]]
     assert_raises(InvalidDocError) { s.tick }
   end
 
   def test_fail_nil_post
     s = SimpleNmLinear.new
-    s.constr <+ [[1, BEGIN_ID, nil]]
+    s.input_buf <+ [[1, BEGIN_ID, nil]]
     assert_raises(InvalidDocError) { s.tick }
   end
 
   def test_fail_cycle
     s = SimpleNmLinear.new
-    s.constr <+ [[1, BEGIN_ID, END_ID],
-                 [2, 1, END_ID],
-                 [3, 2, 1]]
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, 1, END_ID],
+                    [3, 2, 1]]
+    s.tick ; s.tick
     assert_raises(InvalidDocError) { s.tick }
   end
 
@@ -36,7 +37,6 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[9, BEGIN_ID, END_ID],
                     [2, 9, END_ID],
                     [1, 9, 2]]
-    s.tick
     s.tick
     s.tick
     s.tick
@@ -51,7 +51,6 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID]]
-    s.tick
     s.tick
     s.tick
     check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
@@ -70,13 +69,11 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, 1]]
-    # First tick: move ops 1,2 to constr @next
+    # First tick: process non-tiebreaks for ops 1,2
     s.tick
-    # Second tick: move op 3 to constr @next, process non-tiebreaks for ops 1,2
+    # Second tick: process tiebreaks for 1,2, non-tiebreaks for 3
     s.tick
     assert_equal([[3, BEGIN_ID, 1]], s.input_buf.to_a.sort)
-    # Third tick: process tiebreaks for 1,2, non-tiebreaks for 3
-    s.tick
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
 
