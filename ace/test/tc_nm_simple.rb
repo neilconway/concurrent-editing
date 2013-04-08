@@ -120,7 +120,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
         ary << [vals[j], vals[i]]
       end
     end
-    assert_equal(ary.sort, b.before_tc.to_a.sort)
+    assert_equal(ary.sort, b.before.to_a.sort)
   end
 
   def check_sem_hist(b, hist={})

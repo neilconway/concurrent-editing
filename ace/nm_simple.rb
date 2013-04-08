@@ -38,7 +38,6 @@ class SimpleNmLinear
 
     # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]
-    scratch :before_tc, [:from, :to]
 
     # Explicit orderings
     scratch :explicit, [:from, :to]
@@ -126,10 +125,7 @@ class SimpleNmLinear
 
   # Combine explicit, implied_anc, and tiebreak to get the final order.
   bloom :compute_final do
-    before_tc <= before
-    before_tc <= (before_tc * before).pairs(:to => :from) {|t,b| [t.from, b.to]}
-
-    before <= explicit
+    before <= explicit_tc
     before <= use_implied_anc
     before <= use_tiebreak
   end
