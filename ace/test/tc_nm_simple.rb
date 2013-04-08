@@ -32,7 +32,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     assert_raises(InvalidDocError) { s.tick }
   end
 
-  def test_explicit_simple
+  def test_explicit
     s = SimpleNmLinear.new
     s.input_buf <+ [[9, BEGIN_ID, END_ID],
                     [2, 9, END_ID],
@@ -41,16 +41,14 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
     s.tick
     check_linear_order(s, BEGIN_ID, 9, 1, 2, END_ID)
-    check_sem_hist(s,
-                   9 => [],
-                   2 => [9],
-                   1 => [2, 9])
+    check_sem_hist(s, 9 => [], 2 => [9], 1 => [2, 9])
   end
 
-  def test_tiebreak_simple
+  def test_tiebreak
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID]]
+    s.tick
     s.tick
     s.tick
     check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
@@ -64,14 +62,16 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   # correct outcome. Note that this scenario is essentially identical to the
   # "dOPT Puzzle" described in "Operational transformation in real-time group
   # editors: issues, algorithms, and achievements" (Sun and Ellis, CSCW'98).
-  def test_implied_anc_simple
+  def test_implied_anc
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, 1]]
-    # First tick: process non-tiebreaks for ops 1,2
+    # First tick: non-tiebreaks for 1
     s.tick
-    # Second tick: process tiebreaks for 1,2, non-tiebreaks for 3
+    # Second tick: tiebreaks for 1, non-tiebreaks for 2
+    s.tick
+    # Third tick: tiebreaks for 2, non-tiebreaks for 3
     s.tick
     assert_equal([[3, BEGIN_ID, 1]], s.input_buf.to_a.sort)
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
@@ -80,6 +80,22 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick      # No-op
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+  end
+
+  # Similar to the above scenario, but slightly more complicated: there are two
+  # concurrent edits 3,4 that depend on 2 and 1, respectively.
+  def test_implied_anc_concurrent
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, BEGIN_ID, END_ID],
+                    [3, BEGIN_ID, 2],
+                    [4, BEGIN_ID, 1]]
+    s.tick
+    s.tick
+    s.tick
+    s.tick
+    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
 
   def check_linear_order(b, *vals)

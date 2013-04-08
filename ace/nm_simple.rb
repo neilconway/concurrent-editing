@@ -23,6 +23,7 @@ class SimpleNmLinear
     # (semantic) causal delivery is respected.
     table :input_buf, [:id] => [:pre, :post]
     scratch :input_has_pre, input_buf.schema
+    scratch :input_has_post, input_buf.schema
     scratch :to_deliver, input_buf.schema
 
     # The constraint that the given ID must follow the "pre" node and precede
@@ -72,10 +73,14 @@ class SimpleNmLinear
 
   bloom :buffering do
     input_has_pre <= (input_buf * installed).lefts(:pre => :id)
-    to_deliver <= (input_has_pre * installed).lefts(:post => :id)
+    input_has_post <= (input_has_pre * installed).lefts(:post => :id)
+    # XXX: gross hack. For now, we only deliver a single eligible edit per
+    # timestep (we use the edit with the smallest ID but that is arbitrary).
+    to_deliver <= input_has_post.argmin(nil, :id)
     constr <= to_deliver
     input_buf <- to_deliver
     installed <+ constr
+    #stdio <~ to_deliver {|c| ["to_deliver @ #{budtime}: #{c}"]}
   end
 
   bloom :constraints do
@@ -108,12 +113,6 @@ class SimpleNmLinear
                                                                   sem_hist.to => explicit_tc.from,
                                                                   sem_hist.from => explicit_tc.to) do |s,t,e|
       [s.to, t.to]
-    end
-    # XXX: WRONG! Added only for the sake of posterity.
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.to,
-                                                                  sem_hist.to => explicit_tc.from,
-                                                                  sem_hist.from => explicit_tc.to) do |s,t,e|
-      [t.from, s.to]
     end
     use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
 
