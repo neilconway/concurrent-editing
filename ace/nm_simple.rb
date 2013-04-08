@@ -114,6 +114,11 @@ class SimpleNmLinear
                                                                   sem_hist.from => explicit_tc.to) do |s,t,e|
       [s.to, t.to]
     end
+    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.to,
+                                                                  sem_hist.to => explicit_tc.to,
+                                                                  sem_hist.from => explicit_tc.from) do |s,t,e|
+      [t.from, s.to]
+    end
     use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
 
     use_tiebreak <+ tiebreak.notin(use_implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)

@@ -73,13 +73,28 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
     # Third tick: tiebreaks for 2, non-tiebreaks for 3
     s.tick
-    assert_equal([[3, BEGIN_ID, 1]], s.input_buf.to_a.sort)
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+    assert_equal([[3, 2]], s.use_implied_anc.to_a.sort)
 
     s.tick      # No-op
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+  end
+
+  def test_implied_anc_pre
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[2, BEGIN_ID, END_ID],
+                    [3, BEGIN_ID, END_ID],
+                    [1, 3, END_ID]]
+    s.tick ; s.tick ; s.tick
+
+    check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
+    check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
+
+    s.tick      # No-op
+    check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
+    check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
   end
 
   # Similar to the above scenario, but slightly more complicated: there are two
