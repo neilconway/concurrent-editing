@@ -108,6 +108,14 @@ class SimpleNmLinear
 
     tiebreak <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
 
+    # Infer the orderings over child nodes implied by their ancestors. We look
+    # for two cases:
+    #
+    #   1. y is an ancestor of x, there is a tiebreak y < z, and there is an
+    #      explicit constraint x < y; this implies x < z
+    #
+    #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
+    #      explicit constraint y < x; this implies z < x.
     implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.from,
                                                                   sem_hist.to => explicit_tc.from,
                                                                   sem_hist.from => explicit_tc.to) do |s,t,e|
