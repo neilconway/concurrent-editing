@@ -107,6 +107,8 @@ class SimpleNmLinear
     explicit_tc <= (explicit_tc * explicit).pairs(:to => :from) {|t,c| [t.from, c.to]}
 
     tiebreak <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
+    # We only want to use tiebreak orderings when no other order is available
+    use_tiebreak <+ tiebreak.notin(use_implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
 
     # Infer the orderings over child nodes implied by their ancestors. We look
     # for two cases:
@@ -127,8 +129,6 @@ class SimpleNmLinear
       [t.from, s.to]
     end
     use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
-
-    use_tiebreak <+ tiebreak.notin(use_implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
   end
 
   # Combine explicit, implied_anc, and tiebreak to get the final order.
