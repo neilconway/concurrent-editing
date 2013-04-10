@@ -113,6 +113,30 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
 
+  def test_doc_tree
+    doc = [[1, BEGIN_ID, END_ID],
+           [11, 1, END_ID],
+           [12, 1, END_ID],
+           [13, 1, END_ID],
+           [131, 13, END_ID],
+           [2, BEGIN_ID, END_ID],
+           [21, 2, END_ID],
+           [22, 2, 3],
+           [3, BEGIN_ID, END_ID],
+           [31, 3, END_ID],
+           [4, BEGIN_ID, END_ID]]
+    input = doc.shuffle
+    s = SimpleNmLinear.new
+    input.each do |i|
+      s.input_buf <+ [i]
+      s.tick
+    end
+    doc.length.times { s.tick }
+
+    doc_order = doc.map {|d| d.first}
+    check_linear_order(s, BEGIN_ID, 1, 11, 12, 13, 131, 2, 21, 22, 3, 31, 4, END_ID)
+  end
+
   def check_linear_order(b, *vals)
     ary = []
     vals.each_with_index do |v,i|
