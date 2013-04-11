@@ -114,17 +114,17 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   end
 
   def test_doc_tree
-    doc = [[1, BEGIN_ID, END_ID],
-           [11, 1, END_ID],
-           [12, 1, END_ID],
-           [13, 1, END_ID],
-           [131, 13, END_ID],
-           [2, BEGIN_ID, END_ID],
-           [21, 2, END_ID],
-           [22, 2, 3],
-           [3, BEGIN_ID, END_ID],
-           [31, 3, END_ID],
-           [4, BEGIN_ID, END_ID]]
+    doc = [[10, BEGIN_ID, END_ID],
+           [11, 10, END_ID],
+           [12, 11, END_ID],
+           [13, 12, END_ID],
+           [15, 13, 14],
+           [14, 12, END_ID],
+           [30, BEGIN_ID, END_ID],
+           [31, 30, END_ID],
+           [99, 31, 40],
+           [40, BEGIN_ID, END_ID],
+           [41, 40, END_ID]]
     input = doc.shuffle
     s = SimpleNmLinear.new
     input.each do |i|
@@ -134,7 +134,11 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     doc.length.times { s.tick }
 
     doc_order = doc.map {|d| d.first}
-    check_linear_order(s, BEGIN_ID, 1, 11, 12, 13, 131, 2, 21, 22, 3, 31, 4, END_ID)
+    check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
+    check_sem_hist(s,
+                   10 => [], 11 => [10], 12 => [10, 11], 13 => [10, 11, 12],
+                   14 => [10,11,12], 15 => [10,11,12,13,14], 30 => [],
+                   31 => [30], 99 => [30, 31, 40], 40 => [], 41 => [40])
   end
 
   def check_linear_order(b, *vals)
