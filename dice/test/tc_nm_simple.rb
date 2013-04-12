@@ -141,6 +141,30 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                    31 => [30], 99 => [30, 31, 40], 40 => [], 41 => [40])
   end
 
+  DOC_SIZE = 22
+  def test_big_explicit
+    doc = []
+    prev = BEGIN_ID
+    DOC_SIZE.times do |i|
+      curr = i.hash
+      doc << [curr, prev, END_ID]
+      prev = curr
+    end
+    s = SimpleNmLinear.new
+    s.input_buf <+ doc
+    DOC_SIZE.times { |i| s.tick }
+
+    doc_order = doc.map {|d| d.first}
+    check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
+
+    sem_hist = {}
+    doc.each_with_index do |d,i|
+      sem_hist[d[0]] = []
+      i.times {|j| sem_hist[d[0]] << doc[j][0]}
+    end
+    check_sem_hist(s, sem_hist)
+  end
+
   def check_linear_order(b, *vals)
     ary = []
     vals.each_with_index do |v,i|
@@ -152,7 +176,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   end
 
   def check_sem_hist(b, hist={})
-    # We let the caller omit the semantic history of the sentinels
+    # We let the caller omit sentinels from the semantic history
     hist = hist.hmap {|v| v + [BEGIN_ID, END_ID]}
     hist[BEGIN_ID] = [END_ID]
     hist[END_ID] = []
