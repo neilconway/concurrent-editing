@@ -252,21 +252,36 @@ class Gui
         @pulled = false
       else
         txt_id = @next_id.to_s + "." + @site_id.to_s
+        p txt_id
         txt_id = txt_id.to_f
+        p "ID LOOKUP TABLE BEFORE"
+        p @id_lookup_table
+        p "offset"
+        p it.offset
         @id_lookup_table = update_table(@id_lookup_table, it.offset, txt_id)
+        p "ID LOOKUP TABLE NOW:"
+        p @id_lookup_table
         @easy_text_lookup[txt_id] = txt
         @next_id = @next_id + 1
         post_id = @id_lookup_table[it.offset + 1]
         pre_id = @id_lookup_table[it.offset - 1]
+        p "PRE ID LOOKUP"
+        p @id_lookup_table[it.offset - 1]
         if post_id == nil
           post_id = END_ID
         end
         if pre_id == nil or pre_id == -1
           pre_id = BEGIN_ID
         end
+        p "POST: "
+        p post_id
+        p "PRE: "
+        p pre_id
         @client.send_update(txt_id, txt, pre_id, post_id)
         @client.input_buf <+ [[txt_id, pre_id, post_id]]
         @client.tick
+        p "BEFORE: "
+        p @client.before.to_a.sort
         @pulled = false
       end
     end 
@@ -303,6 +318,10 @@ class Gui
     100.times { |i| @client.tick }
 
     linear = linearize(@client.before.to_a.sort)
+    p "BEFORE"
+    p @client.before.to_a.sort
+    p "LINEAR: "
+    p linear
     keys = @client.insert_ops.keys
     values = @client.insert_ops.values
     for i in 0..keys.length - 1
@@ -316,6 +335,7 @@ class Gui
     end
 
     @id_lookup_table = create_table(linear)
+    p @id_lookup_table
     @textview.buffer.text = text
 
 
@@ -348,8 +368,8 @@ class Gui
       elsif before_index != nil and after_index != nil
         if before_index > after_index
           temp = linear[before_index]
-          linear[before_index] = linear[after_index]
-          linear[after_index] = temp
+          linear.delete(temp)
+          linear = insert_before(linear, temp, after_index)
         end
       end
       before_index = nil
