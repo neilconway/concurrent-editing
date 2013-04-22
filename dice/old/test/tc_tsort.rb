@@ -8,7 +8,7 @@ class TSortTest < MiniTest::Unit::TestCase
 
   def test_basic
     t = TSort.new
-    t.edge <= [['aa', 'b'],
+    t.edge <+ [['aa', 'b'],
                ['a', 'b'],
                ['b', 'c'],
                ['c', 'd'],

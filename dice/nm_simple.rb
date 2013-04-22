@@ -32,9 +32,9 @@ class SimpleNmLinear
     # timesteps before the current one.
     table :constr, [:id] => [:pre, :post]
     table :installed, constr.schema
-    scratch :constr_prod, [:x, :y]      # Product of constr with itself
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
     scratch :post_constr, constr.schema # Constraints with a valid "post" edge
+    scratch :constr_prod, [:x, :y]      # Product of constr with itself
 
     # Output: the computed linearization of the DAG
     scratch :before, [:from, :to]

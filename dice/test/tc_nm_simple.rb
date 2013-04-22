@@ -1,5 +1,6 @@
 require_relative 'test_common'
 require_relative '../nm_simple'
+require 'digest/md5'
 
 class NmSimpleTest < MiniTest::Unit::TestCase
   def test_empty_doc
@@ -146,7 +147,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     doc = []
     prev = BEGIN_ID
     DOC_SIZE.times do |i|
-      curr = i.hash
+      curr = stable_hash(i)
       doc << [curr, prev, END_ID]
       prev = curr
     end
@@ -163,6 +164,10 @@ class NmSimpleTest < MiniTest::Unit::TestCase
       i.times {|j| sem_hist[d[0]] << doc[j][0]}
     end
     check_sem_hist(s, sem_hist)
+  end
+
+  def stable_hash(v)
+    Digest::MD5.digest(v.to_s).unpack("L_").first
   end
 
   def check_linear_order(b, *vals)
