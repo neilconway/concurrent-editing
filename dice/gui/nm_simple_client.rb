@@ -10,11 +10,6 @@ unless defined? Float::INFINITY
   Float::INFINITY = 1.0/0.0
 end
 
-# Sentinel edit IDs. Note that the tiebreaker for sentinels should never be
-# used so the actual value of the sentinels is not important.
-#BEGIN_ID = Float::INFINITY
-#END_ID = -Float::INFINITY
-
 class InvalidDocError < StandardError; end
 
 class Client
