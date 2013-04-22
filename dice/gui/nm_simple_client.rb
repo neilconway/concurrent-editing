@@ -12,8 +12,8 @@ end
 
 # Sentinel edit IDs. Note that the tiebreaker for sentinels should never be
 # used so the actual value of the sentinels is not important.
-BEGIN_ID = Float::INFINITY
-END_ID = -Float::INFINITY
+#BEGIN_ID = Float::INFINITY
+#END_ID = -Float::INFINITY
 
 class InvalidDocError < StandardError; end
 
@@ -217,7 +217,6 @@ if __FILE__ == $0
   server = (ARGV.length == 2) ? ARGV[1] : DocProtocol::DEFAULT_ADDR
   puts "Server address: #{server}"
   program = Gui.new(ARGV[0], server)
-  #program = LatticeDocGUI.new(ARGV[0])
   program.run
   Gtk.main
 end
