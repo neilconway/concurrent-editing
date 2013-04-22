@@ -241,12 +241,6 @@ class Gui
     window.add(table)
     window.show_all
 
-    @textview.buffer.signal_connect("insert-text") do |buf, it, txt, len|
-      if len > 1
-        @pulled = true
-      end
-    end
-
     @textview.buffer.signal_connect_after("insert-text") do |buf, it, txt, len|
       if @pulled
         @pulled = false
