@@ -50,15 +50,12 @@ class TreeLinear
 
     # Insert operation state (transient)
     scratch :ins_init, [:op_id]
-    scratch :ins_state, [:op_id, :node_id, :depth]
+    scratch :ins_state, [:op_id, :node_id]
   end
 
   bloom do
-    ins_state <= (ins_init * root).pairs {|i,r| [i.op_id, r.id, 0]}
-
-    # Walk the tree to find the first position that satisfies the "pre"
-    # constraint. That is, we check whether 
-    ins_state <= (ins_state * edge).pairs(:node_id => :from) do |i,e|
-    end
+    # Start traversing the tree by beginning with the PRE constraint and walking
+    # the tree "forward"
+    ins_state <= (ins_init * constr).pairs(:op_id => :id) {|i,c| [i.op_id, c.pre]}
   end
 end

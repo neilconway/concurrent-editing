@@ -15,11 +15,15 @@ END_NODE = Float::INFINITY
 # * can we avoid using NM?
 # * can we represent in-order traversal in logic as well?
 # * support for compacting the tree?
+# * XXX why do we need to consider the depth at all? Depth is only needed as a
+#   way to emulate mutable state (so that we can "remember" the last node we
+#   touched when we run out of nodes to consider); but it seems like there might
+#   be easier ways to do this (e.g., mutable empty -> defined lattice variables?)
 class SimpleTree
   include Bud
 
   state do
-    table :root, [:node_id]
+    table :root, [] => [:node_id]
     table :edge, [:from, :to, :kind]
 
     # Insert operation state (transient). Note that we include the operation ID
