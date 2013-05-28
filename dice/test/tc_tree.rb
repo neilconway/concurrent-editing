@@ -7,11 +7,12 @@ class SimpleTreeTest < MiniTest::Unit::TestCase
     t.ins_init <+ [[5]]
     t.tick
     t.tick
+    check_invariants(t)
     assert_equal([BEGIN_NODE, 5, END_NODE], get_tree_seq(t))
   end
 
-  # XXX: we can't currently insert two operations into the tree during the same
-  # tick safely.
+  # XXX: we can't safely insert two operations into the tree during the same
+  # tick.
   def test_two_ops
     t = SimpleTree.new
     t.ins_init <+ [[7]]
@@ -19,7 +20,26 @@ class SimpleTreeTest < MiniTest::Unit::TestCase
     t.ins_init <+ [[8]]
     t.tick
     t.tick
+    check_invariants(t)
     assert_equal([BEGIN_NODE, 7, 8, END_NODE], get_tree_seq(t))
+  end
+
+  def test_random_ops
+    ops = Array.new(200) { rand(100000) }
+    ops.uniq!
+    t = SimpleTree.new
+    ops.each {|o| t.ins_init <+ [[o]]; t.tick }
+    t.tick
+
+    sorted_ops = ops.sort
+    check_invariants(t)
+    assert_equal([BEGIN_NODE, *sorted_ops, END_NODE], get_tree_seq(t))
+  end
+
+  def check_invariants(t)
+    t.edge.each do |e|
+      assert_equal(e.from > e.to, e.kind == :left, "e = #{e}")
+    end
   end
 
   def visit_node(n, t, &blk)
