@@ -10,6 +10,18 @@ class SimpleTreeTest < MiniTest::Unit::TestCase
     assert_equal([BEGIN_NODE, 5, END_NODE], get_tree_seq(t))
   end
 
+  # XXX: we can't currently insert two operations into the tree during the same
+  # tick safely.
+  def test_two_ops
+    t = SimpleTree.new
+    t.ins_init <+ [[7]]
+    t.tick
+    t.ins_init <+ [[8]]
+    t.tick
+    t.tick
+    assert_equal([BEGIN_NODE, 7, 8, END_NODE], get_tree_seq(t))
+  end
+
   def visit_node(n, t, &blk)
     return if n.nil?
     visit_node(get_child(n, t, :left), t, &blk)
