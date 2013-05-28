@@ -1,10 +1,15 @@
 require 'rubygems'
 require 'bud'
 
-BEGIN_ID = 1
-END_ID = 2
+# Float::INFINITY only defined in MRI 1.9.2+
+unless defined? Float::INFINITY
+  Float::INFINITY = 1.0/0.0
+end
 
-class TreePlay
+BEGIN_NODE = -Float::INFINITY
+END_NODE = Float::INFINITY
+
+class SimpleTree
   include Bud
 
   state do
@@ -19,8 +24,8 @@ class TreePlay
   end
 
   bootstrap do
-    edge <= [[END_ID, BEGIN_ID, :left]]
-    root <= [[END_ID]]
+    edge <= [[END_NODE, BEGIN_NODE, :left]]
+    root <= [[END_NODE]]
   end
 
   bloom do
@@ -43,9 +48,3 @@ class TreePlay
     end
   end
 end
-
-t = TreePlay.new
-t.ins_init <+ [[5]]
-t.tick
-t.tick
-puts t.edge.to_a.sort
