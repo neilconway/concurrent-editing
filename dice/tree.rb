@@ -16,7 +16,9 @@ class SimpleTree
     table :root, [:node_id]
     table :edge, [:from, :to, :kind]
 
-    # Insert operation state (transient)
+    # Insert operation state (transient). Note that we include the operation ID
+    # to allow multiple operations to be in-flight at once, but this doesn't
+    # currently work.
     scratch :ins_init, [:op_id]
     scratch :ins_curr, [:op_id, :node_id, :depth]
 
@@ -42,6 +44,10 @@ class SimpleTree
       end
     end
 
+    # Find as far as we could descend for each operation; this is the node where
+    # we add a new edge corresponding to the insertion.
+    # NB: Alternate implementation. We could use an ldom, where the version is
+    # an lmax (depth) and the value is the node ID at that depth.
     max_depth <= ins_curr.group([:op_id], max(:depth))
     edge <+ (max_depth * ins_curr).rights(:op_id => :op_id, :depth => :depth) do |i|
       [i.node_id, i.op_id, i.op_id < i.node_id ? :left : :right]
