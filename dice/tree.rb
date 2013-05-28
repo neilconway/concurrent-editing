@@ -9,6 +9,12 @@ end
 BEGIN_NODE = -Float::INFINITY
 END_NODE = Float::INFINITY
 
+# TODO:
+# * support concurrent insertions (multiple atoms inserted in the same tick)
+# * use lattices rather than grouping? (see below)
+# * can we avoid using NM?
+# * can we represent in-order traversal in logic as well?
+# * support for compacting the tree?
 class SimpleTree
   include Bud
 
