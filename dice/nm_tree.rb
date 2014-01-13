@@ -54,8 +54,15 @@ class TreeLinear
   end
 
   bloom do
-    # Start traversing the tree by beginning with the PRE constraint and walking
-    # the tree "forward"
+    # Start traversing the tree by beginning with the PRE constraint
+    # XXX: probably worth denormalizing to store pre/post in the insert state
     ins_state <= (ins_init * constr).pairs(:op_id => :id) {|i,c| [i.op_id, c.pre]}
+
+    # Given the current traversal position, decide whether we can place the new
+    # edit here. We need to consider (a) the tiebreak between the new edit and
+    # the current node (b) the new edit's POST constraint (we can't place an
+    # edit after its POST constraint). All the nodes in the right subtree of a
+    # node follow that node in the in-order traversal.
+    ins_state <= (ins_state * edge).
   end
 end
