@@ -12,8 +12,6 @@ class SimpleGraph
   # we then need to update all the path lengths of the nodes in the forward
   # transitive closure of x to reflect the new edge.
   def insert(x, y)
-    x = x.to_s
-    y = y.to_s
     x_node = @nodes[x]
     if x_node.nil?
       x_node = @nodes[x] = Vertex.new(x, [].to_set, 0)
@@ -28,7 +26,7 @@ class SimpleGraph
 
     # Update the path_len values for all the transitively reachable parent
     # nodes, if necessary.
-    update_path_len(x_node, 1)
+    update_path_len(x_node, y_node.path_len + 1)
   end
 
   def update_path_len(n, v)
@@ -65,9 +63,7 @@ class SimpleGraph
     end
     @nodes.each_value do |n|
       n.parents.each do |p|
-        from = g.find_node(n.id)
-        to = g.find_node(p.id)
-        g.add_edges(from, to)
+        g.add_edges(g.find_node(n.id), g.find_node(p.id))
       end
     end
 
@@ -76,11 +72,11 @@ class SimpleGraph
 end
 
 sg = SimpleGraph.new
-sg.insert(:A, :B)
-sg.insert(:B, :C)
-sg.insert(:D, :E)
-sg.insert(:E, :F)
-sg.insert(:A, :F)
-sg.insert(:B, :D)
+sg.insert("A", "B")
+sg.insert("B", "C")
+sg.insert("D", "E")
+sg.insert("E", "F")
+sg.insert("A", "F")
+sg.insert("B", "D")
 sg.enumerate
 sg.dump_graph
