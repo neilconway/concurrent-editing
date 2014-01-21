@@ -9,26 +9,16 @@ class SimpleGraph
     @current_strat = 0
   end
 
-  # Insert a new partial ordering, y < x. We assume that this does not introduce
-  # a cycle. To implement this, we need to add x to the parents of y. Moreover,
-  # we then need to update all the path lengths of the nodes in the forward
-  # transitive closure of x to reflect the new edge.
+  # Insert a new partial ordering, y < x; we assume this does not introduce a
+  # cycle.
   def insert(x, y)
-    x_node = @nodes[x]
-    if x_node.nil?
-      x_node = @nodes[x] = Node.new(x, [].to_set, 0)
-    end
-
-    y_node = @nodes[y]
-    if y_node.nil?
-      y_node = @nodes[y] = Node.new(y, [x_node].to_set, 0)
-    else
-      y_node.parents << x_node
-    end
+    @nodes[x] ||= Node.new(x, [].to_set, 0)
+    @nodes[y] ||= Node.new(y, [].to_set, 0)
+    @nodes[y].parents << @nodes[x]
 
     # Update the path_len values for all the transitively reachable parent
-    # nodes, if necessary.
-    update_path_len(x_node, y_node.path_len + 1)
+    # nodes, as needed.
+    update_path_len(@nodes[x], @nodes[y].path_len + 1)
   end
 
   def update_path_len(n, v)
