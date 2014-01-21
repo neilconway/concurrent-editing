@@ -1,10 +1,12 @@
 require 'set'
 
-Vertex = Struct.new(:id, :parents, :path_len)
+Node = Struct.new(:id, :parents, :path_len)
 
 class SimpleGraph
   def initialize
     @nodes = {}
+    @frontier = nil
+    @current_strat = 0
   end
 
   # Insert a new partial ordering, y < x. We assume that this does not introduce
@@ -14,12 +16,12 @@ class SimpleGraph
   def insert(x, y)
     x_node = @nodes[x]
     if x_node.nil?
-      x_node = @nodes[x] = Vertex.new(x, [].to_set, 0)
+      x_node = @nodes[x] = Node.new(x, [].to_set, 0)
     end
 
     y_node = @nodes[y]
     if y_node.nil?
-      y_node = @nodes[y] = Vertex.new(y, [x_node].to_set, 0)
+      y_node = @nodes[y] = Node.new(y, [x_node].to_set, 0)
     else
       y_node.parents << x_node
     end
@@ -38,21 +40,43 @@ class SimpleGraph
     end
   end
 
-  def enumerate
-    strat = 0
-    while true
-      strat_nodes = @nodes.values.select {|v| v.path_len == strat}
-      break if strat_nodes.empty?
+  def reset
+    @frontier = @nodes.values.select {|n| n.path_len == 0}.to_set
+    @current_strat = 0
+  end
 
-      puts "STRATUM #{strat}:"
-      strat_nodes.each do |n|
-        puts "#{n.id} => #{n.path_len}"
-        n.parents.each do |p|
-          puts "#{n.id} < #{p.id}"
-        end
+  def advance_strat
+    @current_strat += 1
+    @frontier = @frontier.flat_map do |n|
+      n.parents.map do |p|
+        p if p.path_len == @current_strat
+      end.compact
+    end.to_set
+  end
+
+  def print_nodes(s)
+    s.map {|n| n.id}
+  end
+
+  def each_raw(&blk)
+    @frontier.each do |n|
+      n.parents.each do |p|
+        blk.call(n, p)
       end
-      strat += 1
     end
+  end
+
+  def all_strat
+    reset
+    rv = []
+    while true
+      strat = []
+      each_raw {|n,p| strat << [n.id, p.id]}
+      break if strat.empty?
+      rv << strat
+      advance_strat
+    end
+    rv
   end
 
   def dump_graph
@@ -78,5 +102,13 @@ sg.insert("D", "E")
 sg.insert("E", "F")
 sg.insert("A", "F")
 sg.insert("B", "D")
-sg.enumerate
-sg.dump_graph
+raise unless sg.all_strat == [[["C", "B"], ["F", "E"], ["F", "A"]], [["E", "D"]], [["D", "B"]], [["B", "A"]]]
+
+sg = SimpleGraph.new
+sg.insert("A", "B")
+sg.insert("B", "C")
+sg.insert("C", "D")
+sg.insert("C", "E")
+sg.insert("B", "E")
+sg.insert("A", "E")
+raise unless sg.all_strat == [[["D", "C"], ["E", "C"], ["E", "B"], ["E", "A"]], [["C", "B"]], [["B", "A"]]]
