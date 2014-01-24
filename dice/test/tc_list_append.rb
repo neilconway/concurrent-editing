@@ -4,7 +4,7 @@ require_relative '../list_append'
 class ListAppendTest < MiniTest::Unit::TestCase
   def test_safe_tc
     s = ListAppend.new
-    s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"]]
+    s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
     s.tick
 
     assert_equal([["a", LIST_START_ID], ["b", "a"], ["c", "a"],
