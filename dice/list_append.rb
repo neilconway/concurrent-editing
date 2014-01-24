@@ -38,16 +38,19 @@
 require "rubygems"
 require "bud"
 
-class LinearExt
+LIST_START_ID = -1
+LIST_START_TUPLE = [LIST_START_ID, nil]
+
+class ListAppend
   include Bud
 
   state do
-    # The explicit partial order; "id" follows "anchor". Each ID has exactly one
-    # anchor, but a given ID might be the anchor to zero or more other IDs. Note
-    # that this defines both a partial order over the document, as well as a
-    # semantic causal relationshion between IDs: X happens before Y if there is
-    # a (directed) path from Y -> X in the anchor graph.
-    table :explicit, [:id] => [:anchor]
+    # The explicit partial order; "id" follows "prev". Each ID has exactly one
+    # anchor, but a given ID might be the predecessor to zero or more other
+    # IDs. Note that this defines both a partial order over the document as well
+    # as a (semantic) causal relationship between IDs: X happens before Y if
+    # there is a (directed) path from Y -> X in the anchor graph.
+    table :explicit, [:id] => [:prev]
     table :safe, explicit.schema
     scratch :safe_tc, [:id, :prev]
 
@@ -59,19 +62,20 @@ class LinearExt
   end
 
   bootstrap do
+    safe <+ [LIST_START_TUPLE]
   end
 
   bloom :explicit do
-    safe <= (explicit * safe).lefts(:anchor => :id)
+    safe <= (explicit * safe).lefts(:prev => :id)
     safe_tc <= safe
-    safe_tc <= (safe_tc * safe).pairs(:to => :from) {|t,c| [t.from, c.to]}
+    safe_tc <= (safe * safe_tc).pairs(:prev => :id) {|s,t| [s.id, t.prev] unless t == LIST_START_TUPLE}
   end
 
   bloom :tiebreak do
-    tiebreak <= (explicit * explicit).pairs {|x,y| [x.from, y.from] if x.from < y.from}
+#    tiebreak <= (explicit * explicit).pairs {|x,y| [x.from, y.from] if x.from < y.from}
   end
 
   bloom do
-    ord <= explicit_tc
+    ord <= safe_tc
   end
 end
