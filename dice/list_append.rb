@@ -55,10 +55,15 @@ class ListAppend
     scratch :safe_tc, [:id, :prev]
 
     # Tiebreak order
-    table :tiebreak, [:from, :to]
+    table :tiebreak, [:fst, :snd]
+    table :use_tiebreak, tiebreak.schema
+
+    # Implied-by-ancestor order
+    table :implied_anc, [:fst, :snd]
+    table :use_implied_anc, implied_anc.schema
 
     # Computed linearization
-    scratch :ord, [:from, :to]
+    scratch :ord, [:fst, :snd]
   end
 
   bootstrap do
@@ -69,13 +74,21 @@ class ListAppend
     safe <= (explicit * safe).lefts(:prev => :id)
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:prev => :id) {|s,t| [s.id, t.prev] unless t == LIST_START_TUPLE}
-  end
 
-  bloom :tiebreak do
-#    tiebreak <= (explicit * explicit).pairs {|x,y| [x.from, y.from] if x.from < y.from}
+    tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id < y.id}
+    # Only use a tiebreak if we don't have another way to order the two IDs.
+    use_tiebreak <= tiebreak.notin(safe_tc, :fst => :snd, :snd => :fst).notin(use_implied_anc, :fst => :snd, :snd => :fst)
+
+    # Check for orders implied by the ancestors of an edit. If x is an ancestor
+    # of y, then x must precede y in the list order. Hence, if any edit z that
+    # is concurrent with y tiebreaks _before_ x, z must also precede y.
+    implied_anc <= (safe_tc * use_tiebreak).pairs(:fst => :snd) {|s,t| [t.fst, s.snd]}
+    use_implied_anc <= implied_anc.notin(safe_tc, :fst => :snd, :snd => :fst)
   end
 
   bloom do
     ord <= safe_tc
+    ord <= use_tiebreak
+    ord <= use_implied_anc
   end
 end

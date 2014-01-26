@@ -14,4 +14,16 @@ class ListAppendTest < MiniTest::Unit::TestCase
                   ["d", "c"], ["d", "a"], ["d", LIST_START_ID],
                   LIST_START_TUPLE].to_set, s.safe_tc.to_set)
   end
+
+  def test_use_ancestor_1
+    s = ListAppend.new
+    # We have Z -> X explicitly. Hypothetical tiebreaks are Y -> Z and X ->
+    # Y. However, we should follow causal order when using tiebreaks, which
+    # means we should first apply Y -> Z, which implies Y -> X; the latter order
+    # should be preferred over the X -> Y tiebreak.
+    s.explicit <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
+    s.tick
+
+    puts s.tiebreak.to_a.sort.inspect
+  end
 end
