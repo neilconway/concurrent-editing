@@ -37,11 +37,17 @@ class SimpleGraph
 
   def advance_strat
     @current_strat += 1
-    @frontier = @frontier.flat_map do |n|
-      n.parents.map do |p|
-        p if p.path_len == @current_strat
-      end.compact
-    end.to_set
+    new_frontier = Set.new
+    @frontier.each do |n|
+      n.parents.each do |p|
+        if p.path_len == @current_strat
+          new_frontier << p
+        elsif p.path_len > @current_strat
+          new_frontier << n
+        end
+      end
+    end
+    @frontier = new_frontier
   end
 
   def print_nodes(s)
@@ -51,7 +57,7 @@ class SimpleGraph
   def each_raw(&blk)
     @frontier.each do |n|
       n.parents.each do |p|
-        blk.call(n, p)
+        blk.call(n, p) if p.path_len == @current_strat + 1
       end
     end
   end
@@ -63,7 +69,7 @@ class SimpleGraph
       strat = []
       each_raw {|n,p| strat << [n.id, p.id]}
       break if strat.empty?
-      rv << strat
+      rv << strat.sort
       advance_strat
     end
     rv
@@ -87,12 +93,24 @@ end
 
 sg = SimpleGraph.new
 sg.insert("A", "B")
+sg.insert("A", "C")
+sg.insert("B", "C")
+raise unless sg.all_strat == [[["C", "B"]], [["B", "A"], ["C", "A"]]]
+
+sg = SimpleGraph.new
+sg.insert("A", "B")
 sg.insert("B", "C")
 sg.insert("D", "E")
 sg.insert("E", "F")
 sg.insert("A", "F")
 sg.insert("B", "D")
-raise unless sg.all_strat == [[["C", "B"], ["F", "E"], ["F", "A"]], [["E", "D"]], [["D", "B"]], [["B", "A"]]]
+# NB: Note that in some sense, it would be more correct to emit C -> B in the
+# first stratum. However, implementing this seems quite difficult/expensive, and
+# delaying the appearance of such an edge does not seem unsafe/wrong.
+raise unless sg.all_strat == [[["F", "E"]],
+                              [["E", "D"]],
+                              [["C", "B"], ["D", "B"]],
+                              [["B", "A"], ["F", "A"]]]
 
 sg = SimpleGraph.new
 sg.insert("A", "B")
@@ -101,4 +119,6 @@ sg.insert("C", "D")
 sg.insert("C", "E")
 sg.insert("B", "E")
 sg.insert("A", "E")
-raise unless sg.all_strat == [[["D", "C"], ["E", "C"], ["E", "B"], ["E", "A"]], [["C", "B"]], [["B", "A"]]]
+raise unless sg.all_strat == [[["D", "C"], ["E", "C"]],
+                              [["C", "B"], ["E", "B"]],
+                              [["B", "A"], ["E", "A"]]]
