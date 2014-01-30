@@ -38,21 +38,21 @@
 require "rubygems"
 require "bud"
 
-LIST_START_ID = -1
-LIST_START_TUPLE = [LIST_START_ID, nil]
+LIST_START_ID = "-1"
+LIST_START_TUPLE = ["DUMMY", LIST_START_ID]
 
 class ListAppend
   include Bud
 
   state do
-    # The explicit partial order; "id" follows "prev". Each ID has exactly one
-    # anchor, but a given ID might be the predecessor to zero or more other
-    # IDs. Note that this defines both a partial order over the document as well
-    # as a (semantic) causal relationship between IDs: X happens before Y if
-    # there is a (directed) path from Y -> X in the anchor graph.
-    poset :explicit, [:id] => [:prev]
-    poset :safe, explicit.schema
-    poset :safe_tc, [:id, :prev]
+    # The explicit partial order; "id" comes after "anchor". Each ID has exactly
+    # one anchor, but a given ID might anchor zero or more other IDs. Note that
+    # this defines both a partial order over the document as well as a
+    # (semantic) causal relationship between IDs: X happens before Y if there is
+    # a (directed) path from Y -> X in the anchor graph.
+    poset :explicit, [:id] => [:anchor]
+    poset :safe, [:fst, :snd]
+    poset :safe_tc, safe.schema
 
     # Tiebreak order
     table :tiebreak, [:fst, :snd]
@@ -71,11 +71,11 @@ class ListAppend
   end
 
   bloom :explicit do
-    safe <= (explicit * safe).lefts(:prev => :id)
+    safe <= (explicit * safe).lefts(:anchor => :snd) {|e| [e.anchor, e.id]}
     safe_tc <= safe
-    safe_tc <= (safe * safe_tc).pairs(:prev => :id) {|s,t| [s.id, t.prev] unless t == LIST_START_TUPLE}
+    safe_tc <= (safe * safe_tc).pairs(:snd => :fst) {|s,t| [s.fst, t.snd] unless t == LIST_START_TUPLE}
 
-    tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id < y.id}
+    tiebreak <= (safe * safe).pairs {|x,y| [x.snd, y.snd] if x.snd < y.snd}
     # Only use a tiebreak if we don't have another way to order the two IDs.
     use_tiebreak <= tiebreak.notin(safe_tc, :fst => :snd, :snd => :fst).notin(use_implied_anc, :fst => :snd, :snd => :fst)
 
