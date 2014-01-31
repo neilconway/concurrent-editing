@@ -50,9 +50,9 @@ class ListAppend
     # this defines both a partial order over the document as well as a
     # (semantic) causal relationship between IDs: X happens before Y if there is
     # a (directed) path from Y -> X in the anchor graph.
-    poset :explicit, [:id] => [:anchor]
+    table :explicit, [:id] => [:anchor]
     poset :safe, [:id, :pred]
-    poset :safe_tc, safe.schema
+    table :safe_tc, safe.schema
 
     # Tiebreak order
     table :tiebreak, [:id, :pred]
@@ -63,7 +63,7 @@ class ListAppend
     table :use_implied_anc, implied_anc.schema
 
     # Computed linearization
-    scratch :ord, [:id, :pred]
+    table :ord, [:id, :pred]
   end
 
   bootstrap do
