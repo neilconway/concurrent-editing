@@ -70,23 +70,28 @@ class ListAppend
     safe <+ [LIST_START_TUPLE]
   end
 
-  bloom :explicit do
+  stratum 0 do
     safe <= (explicit * safe).lefts(:anchor => :id)
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
-
     tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
-    # Only use a tiebreak if we don't have another way to order the two IDs.
-    use_tiebreak <= tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
+  end
 
+  stratum 1 do
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z that
     # is concurrent with y tiebreaks _before_ x, z must also precede y.
     implied_anc <= (safe_tc * use_tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
+  end
+
+  stratum 2 do
     use_implied_anc <= implied_anc.notin(safe_tc, :id => :pred, :pred => :id)
   end
 
-  bloom do
+  stratum 3 do
+    # Only use a tiebreak if we don't have another way to order the two IDs.
+    use_tiebreak <= tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
+
     ord <= safe_tc
     ord <= use_tiebreak
     ord <= use_implied_anc

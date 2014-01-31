@@ -3,16 +3,7 @@ require_relative '../list_append'
 
 class ListAppendTest < MiniTest::Unit::TestCase
   def make_list_append
-    ListAppend.new(:stratum_map => {
-                     "explicit" => 0,
-                     "safe" => 0,
-                     "safe_tc" => 0,
-                     "tiebreak" => 0,
-                     "use_tiebreak" => 1,
-                     "implied_anc" => 2,
-                     "use_implied_anc" => 2,
-                     "ord" => 3
-                   })
+    ListAppend.new
   end
 
   def test_safe_tc
@@ -33,6 +24,18 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
     s.tick
 
+    assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID],
+                  ["b", "a"], ["c", "a"], ["c", "b"], LIST_START_TUPLE].to_set,
+                 s.ord.to_set)
+  end
+
+  def test_simple_tiebreak
+    s = make_list_append
+    s.explicit <+ [["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID]]
+    s.tick
+
+    puts "tiebreak: #{s.tiebreak.to_a.sort}"
+    puts "use_tiebreak: #{s.tiebreak.to_a.sort}"
     assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID],
                   ["b", "a"], ["c", "a"], ["c", "b"], LIST_START_TUPLE].to_set,
                  s.ord.to_set)
