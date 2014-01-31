@@ -28,6 +28,16 @@ class ListAppendTest < MiniTest::Unit::TestCase
                   LIST_START_TUPLE].to_set, s.safe_tc.to_set)
   end
 
+  def test_linear_chain
+    s = make_list_append
+    s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
+    s.tick
+
+    assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID],
+                  ["b", "a"], ["c", "a"], ["c", "b"], LIST_START_TUPLE].to_set,
+                 s.ord.to_set)
+  end
+
   def test_use_ancestor_1
     s = make_list_append
     # We have Z -> X explicitly. Hypothetical tiebreaks are Y -> Z and X ->
@@ -38,9 +48,9 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
     s.tick
 
-    assert_equal([["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID],
-                  LIST_START_TUPLE, ["x", LIST_START_ID],
-                  ["z", "y"], ["x", "y"]].to_a.sort, s.ord.to_a.sort)
+    assert_equal([["x", LIST_START_ID], ["y", LIST_START_ID], ["z", LIST_START_ID],
+                  ["x", "z"], ["z", "y"], ["x", "y"],
+                  LIST_START_TUPLE].to_a.sort, s.ord.to_a.sort)
 
   end
 
