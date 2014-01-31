@@ -39,7 +39,7 @@ require "rubygems"
 require "bud"
 
 LIST_START_ID = "-1"
-LIST_START_TUPLE = ["DUMMY", LIST_START_ID]
+LIST_START_TUPLE = [LIST_START_ID, nil]
 
 class ListAppend
   include Bud
@@ -51,19 +51,19 @@ class ListAppend
     # (semantic) causal relationship between IDs: X happens before Y if there is
     # a (directed) path from Y -> X in the anchor graph.
     poset :explicit, [:id] => [:anchor]
-    poset :safe, [:fst, :snd]
+    poset :safe, [:id, :pred]
     poset :safe_tc, safe.schema
 
     # Tiebreak order
-    table :tiebreak, [:fst, :snd]
+    table :tiebreak, [:id, :pred]
     table :use_tiebreak, tiebreak.schema
 
     # Implied-by-ancestor order
-    table :implied_anc, [:fst, :snd]
+    table :implied_anc, [:id, :pred]
     table :use_implied_anc, implied_anc.schema
 
     # Computed linearization
-    scratch :ord, [:fst, :snd]
+    scratch :ord, [:id, :pred]
   end
 
   bootstrap do
@@ -71,19 +71,19 @@ class ListAppend
   end
 
   bloom :explicit do
-    safe <= (explicit * safe).lefts(:anchor => :snd) {|e| [e.anchor, e.id]}
+    safe <= (explicit * safe).lefts(:anchor => :id)
     safe_tc <= safe
-    safe_tc <= (safe * safe_tc).pairs(:snd => :fst) {|s,t| [s.fst, t.snd] unless t == LIST_START_TUPLE}
+    safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
 
-    tiebreak <= (safe * safe).pairs {|x,y| [x.snd, y.snd] if x.snd < y.snd}
+    tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    use_tiebreak <= tiebreak.notin(safe_tc, :fst => :snd, :snd => :fst).notin(use_implied_anc, :fst => :snd, :snd => :fst)
+    use_tiebreak <= tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
 
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z that
     # is concurrent with y tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (safe_tc * use_tiebreak).pairs(:fst => :snd) {|s,t| [t.fst, s.snd]}
-    use_implied_anc <= implied_anc.notin(safe_tc, :fst => :snd, :snd => :fst)
+    implied_anc <= (safe_tc * use_tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
+    use_implied_anc <= implied_anc.notin(safe_tc, :id => :pred, :pred => :id)
   end
 
   bloom do

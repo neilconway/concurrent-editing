@@ -16,11 +16,11 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
     s.tick
 
-    assert_equal([[LIST_START_ID, "a"], ["a", "b"], ["a", "c"],
-                  ["c", "d"], LIST_START_TUPLE].to_set, s.safe.to_set)
-    assert_equal([[LIST_START_ID, "a"], ["a", "b"], [LIST_START_ID, "b"],
-                  ["a", "c"], [LIST_START_ID, "c"],
-                  ["c", "d"], ["a", "d"], [LIST_START_ID, "d"],
+    assert_equal([["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"],
+                  LIST_START_TUPLE].to_set, s.safe.to_set)
+    assert_equal([["a", LIST_START_ID], ["b", "a"], ["b", LIST_START_ID],
+                  ["c", "a"], ["c", LIST_START_ID],
+                  ["d", "c"], ["d", "a"], ["d", LIST_START_ID],
                   LIST_START_TUPLE].to_set, s.safe_tc.to_set)
   end
 
