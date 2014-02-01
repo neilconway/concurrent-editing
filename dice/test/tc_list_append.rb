@@ -6,6 +6,18 @@ class ListAppendTest < MiniTest::Unit::TestCase
     ListAppend.new
   end
 
+  def check_linear_order(b, *vals)
+    vals = [LIST_START_ID] + vals
+    ary = []
+    vals.each_with_index do |v,i|
+      i.times do |j|
+        ary << [vals[i], vals[j]]
+      end
+    end
+    ary << LIST_START_TUPLE
+    assert_equal(ary.sort, b.ord.to_a.sort)
+  end
+
   def test_safe_tc
     s = make_list_append
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
@@ -24,9 +36,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
     s.tick
 
-    assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID],
-                  ["b", "a"], ["c", "a"], ["c", "b"], LIST_START_TUPLE].to_set,
-                 s.ord.to_set)
+    check_linear_order(s, "a", "b", "c")
   end
 
   def test_simple_tiebreak
@@ -34,11 +44,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID]]
     s.tick
 
-    puts "tiebreak: #{s.tiebreak.to_a.sort}"
-    puts "use_tiebreak: #{s.tiebreak.to_a.sort}"
-    assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID],
-                  ["b", "a"], ["c", "a"], ["c", "b"], LIST_START_TUPLE].to_set,
-                 s.ord.to_set)
+    check_linear_order(s, "a", "b", "c")
   end
 
   def test_use_ancestor_1
@@ -51,10 +57,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.explicit <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
     s.tick
 
-    assert_equal([["x", LIST_START_ID], ["y", LIST_START_ID], ["z", LIST_START_ID],
-                  ["x", "z"], ["z", "y"], ["x", "y"],
-                  LIST_START_TUPLE].to_a.sort, s.ord.to_a.sort)
-
+    check_linear_order(s, "y", "z", "x")
   end
 
   def test_key_conflict
