@@ -2,10 +2,6 @@ require_relative 'test_common'
 require_relative '../list_append'
 
 class ListAppendTest < MiniTest::Unit::TestCase
-  def make_list_append
-    ListAppend.new
-  end
-
   def check_linear_order(b, *vals)
     vals = [LIST_START_ID] + vals
     ary = []
@@ -19,7 +15,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
   end
 
   def test_safe_tc
-    s = make_list_append
+    s = ListAppend.new
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
     s.tick
 
@@ -32,7 +28,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
   end
 
   def test_linear_chain
-    s = make_list_append
+    s = ListAppend.new
     s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
     s.tick
 
@@ -40,7 +36,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
   end
 
   def test_simple_tiebreak
-    s = make_list_append
+    s = ListAppend.new
     s.explicit <+ [["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID]]
     s.tick
 
@@ -48,7 +44,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
   end
 
   def test_use_ancestor_1
-    s = make_list_append
+    s = ListAppend.new
     # We have Z -> X explicitly. Hypothetical tiebreaks are Y -> Z and X ->
     # Y. However, we should follow causal order when using tiebreaks, which
     # means we should first apply Y -> Z, which implies Y -> X; the latter order
@@ -58,8 +54,5 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, "y", "z", "x")
-  end
-
-  def test_key_conflict
   end
 end
