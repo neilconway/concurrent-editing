@@ -30,7 +30,7 @@ class SimpleNmLinear
     # the "post" node. This encodes a DAG. "installed" is essentially
     # constr@prev; i.e., all the constraints that have been installed in
     # timesteps before the current one.
-    table :constr, [:id] => [:pre, :post]
+    table :constr, to_deliver.schema
     table :installed, constr.schema
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
     scratch :post_constr, constr.schema # Constraints with a valid "post" edge
@@ -79,7 +79,6 @@ class SimpleNmLinear
     constr <= to_deliver
     input_buf <- to_deliver
     installed <+ constr
-    #stdio <~ to_deliver {|c| ["to_deliver @ #{budtime}: #{c}"]}
   end
 
   bloom :constraints do
