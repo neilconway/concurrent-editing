@@ -55,4 +55,46 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
     check_linear_order(s, "y", "z", "x")
   end
+
+  def test_two_concurrent_users1
+    s = ListAppend.new
+    s.explicit <+ [["a1", LIST_START_ID],
+                   ["a2", "a1"],
+                   ["a3", "a2"],
+                   ["a4", "a3"],
+                   ["b1", LIST_START_ID],
+                   ["b2", "b1"],
+                   ["b3", "b2"],
+                   ["b4", "b3"]]
+    s.tick
+
+    check_linear_order(s, "a1", "a2", "a3", "a4", "b1", "b2", "b3", "b4")
+  end
+
+  def test_two_concurrent_users2
+    s = ListAppend.new
+    s.explicit <+ [["c1", LIST_START_ID],
+                   ["c2", "c1"],
+                   ["c3", "c2"],
+                   ["c4", "c3"],
+                   ["b1", LIST_START_ID],
+                   ["b2", "b1"],
+                   ["b3", "b2"],
+                   ["b4", "b3"]]
+    s.tick
+
+    check_linear_order(s, "b1", "b2", "b3", "b4", "c1", "c2", "c3", "c4")
+  end
+
+  def test_two_concurrent_users3
+    s = ListAppend.new
+    s.explicit <+ [["a1", LIST_START_ID],
+                   ["b1", LIST_START_ID],
+                   ["y", "a1"],
+                   ["x", "b1"]]
+    s.tick
+
+    # Note that we interleave edits from different "users"
+    check_linear_order(s, "a1", "b1", "x", "y")
+  end
 end
