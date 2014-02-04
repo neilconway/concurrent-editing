@@ -29,7 +29,6 @@ class SimpleNmLinear
     table :installed, constr.schema
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
     scratch :post_constr, constr.schema # Constraints with a valid "post" edge
-    scratch :constr_prod, [:x, :y]      # Product of constr with itself
 
     # Output: the computed linearization of the DAG
     table :before, [:id, :pred]
@@ -79,7 +78,6 @@ class SimpleNmLinear
   bloom :constraints do
     pre_constr <= constr {|c| c unless [BEGIN_ID, END_ID].include? c.id}
     post_constr <= constr {|c| c unless c.id == END_ID}
-    constr_prod <= (constr * constr).pairs {|c1,c2| [c1.id, c2.id]}
   end
 
   bloom :compute_sem_hist do
@@ -100,7 +98,7 @@ class SimpleNmLinear
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
-    tiebreak <= constr_prod {|p| [p.x, p.y] if p.x > p.y}
+    tiebreak <= (constr * constr).pairs {|c1,c2| [c1.id, c2.id] if c1.id > c2.id}
     # We only want to use tiebreak orderings when no other order is available
     use_tiebreak <+ tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 
