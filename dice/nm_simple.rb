@@ -32,25 +32,25 @@ class SimpleNmLinear
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
 
     # Output: the computed linearization of the DAG
-    scratch :before, [:id, :pred]
+    table :before, [:id, :pred]
 
     # Explicit orderings
-    scratch :explicit, [:id, :pred]
-    scratch :explicit_tc, explicit.schema
+    table :explicit, [:id, :pred]
+    table :explicit_tc, explicit.schema
 
     # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    scratch :tiebreak, [:id, :pred]
-    scratch :use_tiebreak, tiebreak.schema
+    table :tiebreak, [:id, :pred]
+    table :use_tiebreak, tiebreak.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
-    scratch :implied_anc, [:id, :pred]
-    scratch :use_implied_anc, implied_anc.schema
+    table :implied_anc, [:id, :pred]
+    table :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
-    scratch :sem_hist, [:from, :to]
+    table :sem_hist, [:from, :to]
 
     # Invalid document state
     scratch :doc_fail, [:err]
