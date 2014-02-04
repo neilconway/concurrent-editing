@@ -1,11 +1,6 @@
 require 'rubygems'
 require 'bud'
 
-# Float::INFINITY only defined in MRI 1.9.2+
-unless defined? Float::INFINITY
-  Float::INFINITY = 1.0/0.0
-end
-
 # Sentinel edit IDs. Note that the tiebreaker for sentinels should never be
 # used so the actual value of the sentinels is not important.
 BEGIN_ID = Float::INFINITY
@@ -37,22 +32,22 @@ class SimpleNmLinear
     scratch :constr_prod, [:x, :y]      # Product of constr with itself
 
     # Output: the computed linearization of the DAG
-    scratch :before, [:from, :to]
+    scratch :before, [:id, :pred]
 
     # Explicit orderings
-    scratch :explicit, [:from, :to]
-    scratch :explicit_tc, [:from, :to]
+    scratch :explicit, [:id, :pred]
+    scratch :explicit_tc, explicit.schema
 
     # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    scratch :tiebreak, [:from, :to]
-    scratch :use_tiebreak, [:from, :to]
+    scratch :tiebreak, [:id, :pred]
+    scratch :use_tiebreak, tiebreak.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
-    scratch :implied_anc, [:from, :to]
-    scratch :use_implied_anc, [:from, :to]
+    scratch :implied_anc, [:id, :pred]
+    scratch :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     scratch :sem_hist, [:from, :to]
@@ -100,14 +95,14 @@ class SimpleNmLinear
 
   # Compute each of explicit, implied_anc, and tiebreak.
   bloom :compute_candidates do
-    explicit <= pre_constr {|c| [c.pre, c.id]}
-    explicit <= post_constr {|c| [c.id, c.post]}
+    explicit <= pre_constr {|c| [c.id, c.pre]}
+    explicit <= post_constr {|c| [c.post, c.id]}
     explicit_tc <= explicit
-    explicit_tc <= (explicit_tc * explicit).pairs(:to => :from) {|t,c| [t.from, c.to]}
+    explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
-    tiebreak <= constr_prod {|p| [p.x, p.y] if p.x < p.y}
+    tiebreak <= constr_prod {|p| [p.x, p.y] if p.x > p.y}
     # We only want to use tiebreak orderings when no other order is available
-    use_tiebreak <+ tiebreak.notin(use_implied_anc, :from => :to, :to => :from).notin(explicit_tc, :from => :to, :to => :from)
+    use_tiebreak <+ tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 
     # Infer the orderings over child nodes implied by their ancestors. We look
     # for two cases:
@@ -117,17 +112,17 @@ class SimpleNmLinear
     #
     #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
     #      explicit constraint y < x; this implies z < x.
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.from,
-                                                                  sem_hist.to => explicit_tc.from,
-                                                                  sem_hist.from => explicit_tc.to) do |s,t,e|
-      [s.to, t.to]
+    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.pred,
+                                                                  sem_hist.to => explicit_tc.pred,
+                                                                  sem_hist.from => explicit_tc.id) do |s,t,e|
+      [t.id, s.to]
     end
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.to,
-                                                                  sem_hist.to => explicit_tc.to,
-                                                                  sem_hist.from => explicit_tc.from) do |s,t,e|
-      [t.from, s.to]
+    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.id,
+                                                                  sem_hist.to => explicit_tc.id,
+                                                                  sem_hist.from => explicit_tc.pred) do |s,t,e|
+      [s.to, t.pred]
     end
-    use_implied_anc <= implied_anc.notin(explicit_tc, :from => :to, :to => :from)
+    use_implied_anc <= implied_anc.notin(explicit_tc, :id => :pred, :pred => :id)
   end
 
   # Combine explicit, implied_anc, and tiebreak to get the final order.
@@ -146,7 +141,7 @@ class SimpleNmLinear
     doc_fail <= input_buf {|c| [c] if c.pre.nil? || c.post.nil?}
 
     # Constraint graph should be acyclic
-    doc_fail <= explicit_tc {|c| [c] if c.from == c.to}
+    doc_fail <= explicit_tc {|c| [c] if c.pred == c.id}
 
     # Note that the above rules ensure that BEGIN is not a post edge and END is
     # not a pre edge of any constraint; this would imply either a cycle or a nil

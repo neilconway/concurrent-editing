@@ -8,8 +8,9 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
     check_linear_order(s, BEGIN_ID, END_ID)
     check_sem_hist(s)
-    assert_equal([[BEGIN_ID, END_ID]], s.explicit.to_a)
+    assert_equal([[END_ID, BEGIN_ID]], s.explicit.to_a)
     assert_equal([], s.use_implied_anc.to_a)
+    assert_equal([], s.use_tiebreak.to_a)
   end
 
   def test_fail_nil_pre
@@ -74,9 +75,10 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
     # Third tick: tiebreaks for 2, non-tiebreaks for 3
     s.tick
+
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
-    assert_equal([[3, 2]], s.use_implied_anc.to_a.sort)
+    assert_equal([[2, 3]], s.use_implied_anc.to_a.sort)
 
     s.tick      # No-op
     check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
@@ -174,7 +176,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     ary = []
     vals.each_with_index do |v,i|
       i.times do |j|
-        ary << [vals[j], vals[i]]
+        ary << [vals[i], vals[j]]
       end
     end
     assert_equal(ary.sort, b.before.to_a.sort)
