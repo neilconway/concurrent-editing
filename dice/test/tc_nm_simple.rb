@@ -3,6 +3,31 @@ require_relative '../nm_simple'
 require 'digest/md5'
 
 class NmSimpleTest < MiniTest::Unit::TestCase
+  def check_linear_order(b, *vals)
+    ary = []
+    vals.each_with_index do |v,i|
+      i.times do |j|
+        ary << [vals[i], vals[j]]
+      end
+    end
+    assert_equal(ary.sort, b.before.to_a.sort)
+  end
+
+  def check_sem_hist(b, hist={})
+    # We let the caller omit sentinels from the semantic history
+    hist = hist.hmap {|v| v + [BEGIN_ID, END_ID]}
+    hist[BEGIN_ID] = [END_ID]
+    hist[END_ID] = []
+
+    hist_ary = []
+    hist.each do |k,v|
+      v.each do |dep|
+        hist_ary << [dep, k]
+      end
+    end
+    assert_equal(hist_ary.sort, b.sem_hist.to_a.sort)
+  end
+
   def test_empty_doc
     s = SimpleNmLinear.new
     s.tick
@@ -163,30 +188,5 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
   def stable_hash(v)
     Digest::MD5.digest(v.to_s).unpack("L_").first
-  end
-
-  def check_linear_order(b, *vals)
-    ary = []
-    vals.each_with_index do |v,i|
-      i.times do |j|
-        ary << [vals[i], vals[j]]
-      end
-    end
-    assert_equal(ary.sort, b.before.to_a.sort)
-  end
-
-  def check_sem_hist(b, hist={})
-    # We let the caller omit sentinels from the semantic history
-    hist = hist.hmap {|v| v + [BEGIN_ID, END_ID]}
-    hist[BEGIN_ID] = [END_ID]
-    hist[END_ID] = []
-
-    hist_ary = []
-    hist.each do |k,v|
-      v.each do |dep|
-        hist_ary << [dep, k]
-      end
-    end
-    assert_equal(hist_ary.sort, b.sem_hist.to_a.sort)
   end
 end
