@@ -39,9 +39,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[9, BEGIN_ID, END_ID],
                     [2, 9, END_ID],
                     [1, 9, 2]]
-    s.tick
-    s.tick
-    s.tick
+    3.times { s.tick }
     check_linear_order(s, BEGIN_ID, 9, 1, 2, END_ID)
     check_sem_hist(s, 9 => [], 2 => [9], 1 => [2, 9])
   end
@@ -50,9 +48,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID]]
-    s.tick
-    s.tick
-    s.tick
+    3.times { s.tick }
     check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [])
   end
@@ -90,7 +86,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, END_ID],
                     [1, 3, END_ID]]
-    s.tick ; s.tick ; s.tick
+    3.times { s.tick }
 
     check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
     check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
@@ -108,10 +104,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, 2],
                     [4, BEGIN_ID, 1]]
-    s.tick
-    s.tick
-    s.tick
-    s.tick
+    4.times { s.tick }
     check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
