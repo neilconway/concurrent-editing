@@ -19,19 +19,15 @@ class SimpleNmLinear
     table :input_buf, [:id] => [:pre, :post]
     scratch :input_has_pre, input_buf.schema
     scratch :input_has_post, input_buf.schema
-    scratch :to_deliver, input_buf.schema
 
     # The constraint that the given ID must follow the "pre" node and precede
-    # the "post" node. This encodes a DAG. "installed" is essentially
-    # constr@prev; i.e., all the constraints that have been installed in
-    # timesteps before the current one.
-    table :constr, to_deliver.schema
-    table :installed, constr.schema
+    # the "post" node. This encodes a DAG.
+    table :constr, input_buf.schema
     scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
     scratch :post_constr, constr.schema # Constraints with a valid "post" edge
 
     # Output: the computed linearization of the DAG
-    table :before, [:id, :pred]
+    table :ord, [:id, :pred]
 
     # Explicit orderings
     table :explicit, [:id, :pred]
@@ -49,7 +45,7 @@ class SimpleNmLinear
     table :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
-    table :sem_hist, [:from, :to]
+    poset :sem_hist, [:to, :from]
 
     # Invalid document state
     scratch :doc_fail, [:err]
@@ -60,48 +56,35 @@ class SimpleNmLinear
     # then BEGIN is placed before END. Naturally these could be reversed.
     constr <+ [[BEGIN_ID, nil, END_ID],
                [END_ID, nil, nil]]
-    installed <+ [[BEGIN_ID, nil, END_ID],
-                  [END_ID, nil, nil]]
   end
 
-  bloom :buffering do
-    input_has_pre <= (input_buf * installed).lefts(:pre => :id)
-    input_has_post <= (input_has_pre * installed).lefts(:post => :id)
-    # XXX: gross hack. For now, we only deliver a single eligible edit per
-    # timestep (we use the edit with the smallest ID but that is arbitrary).
-    to_deliver <= input_has_post.argmin(nil, :id)
-    constr <= to_deliver
-    input_buf <- to_deliver
-    installed <+ constr
-  end
+  stratum 0 do
+    input_has_pre <= (input_buf * constr).lefts(:pre => :id)
+    input_has_post <= (input_has_pre * constr).lefts(:post => :id)
+    constr <= input_has_post
 
-  bloom :constraints do
     pre_constr <= constr {|c| c unless [BEGIN_ID, END_ID].include? c.id}
     post_constr <= constr {|c| c unless c.id == END_ID}
-  end
 
-  bloom :compute_sem_hist do
-    sem_hist <= pre_constr {|c| [c.pre, c.id]}
-    sem_hist <= post_constr {|c| [c.post, c.id]}
+    sem_hist <= pre_constr {|c| [c.id, c.pre]}
+    sem_hist <= post_constr {|c| [c.id, c.post]}
     sem_hist <= (sem_hist * pre_constr).pairs(:from => :id) do |r,c|
-      [c.pre, r.to]
+      [r.to, c.pre]
     end
     sem_hist <= (sem_hist * post_constr).pairs(:from => :id) do |r,c|
-      [c.post, r.to]
+      [r.to, c.post]
     end
-  end
 
-  # Compute each of explicit, implied_anc, and tiebreak.
-  bloom :compute_candidates do
     explicit <= pre_constr {|c| [c.id, c.pre]}
     explicit <= post_constr {|c| [c.post, c.id]}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
-    tiebreak <= (constr * constr).pairs {|c1,c2| [c1.id, c2.id] if c1.id > c2.id}
-    # We only want to use tiebreak orderings when no other order is available
-    use_tiebreak <+ tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
+    tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.from, c2.from] if c1.from > c2.from}
+    tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.to, c2.to] if c1.to > c2.to}
+  end
 
+  stratum 1 do
     # Infer the orderings over child nodes implied by their ancestors. We look
     # for two cases:
     #
@@ -120,17 +103,19 @@ class SimpleNmLinear
                                                                   sem_hist.from => explicit_tc.pred) do |s,t,e|
       [s.to, t.pred]
     end
+  end
+
+  stratum 2 do
     use_implied_anc <= implied_anc.notin(explicit_tc, :id => :pred, :pred => :id)
   end
 
-  # Combine explicit, implied_anc, and tiebreak to get the final order.
-  bloom :compute_final do
-    before <= explicit_tc
-    before <= use_implied_anc
-    before <= use_tiebreak
-  end
+  stratum 3 do
+    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 
-  bloom :check_valid do
+    ord <= explicit_tc
+    ord <= use_implied_anc
+    ord <= use_tiebreak
+
     stdio <~ doc_fail {|e| raise InvalidDocError, e.inspect }
 
     # Only sentinels can have nil pre/post edges, but those never appear in the

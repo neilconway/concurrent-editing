@@ -10,7 +10,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
         ary << [vals[i], vals[j]]
       end
     end
-    assert_equal(ary.sort, b.before.to_a.sort)
+    assert_equal(ary.sort, b.ord.to_a.sort, "order mismatch")
   end
 
   def check_sem_hist(b, hist={})
@@ -22,10 +22,10 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     hist_ary = []
     hist.each do |k,v|
       v.each do |dep|
-        hist_ary << [dep, k]
+        hist_ary << [k, dep]
       end
     end
-    assert_equal(hist_ary.sort, b.sem_hist.to_a.sort)
+    assert_equal(hist_ary.sort, b.sem_hist.to_a.sort, "incorrect causal history")
   end
 
   def test_empty_doc
@@ -55,7 +55,6 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, 1, END_ID],
                     [3, 2, 1]]
-    s.tick ; s.tick
     assert_raises(InvalidDocError) { s.tick }
   end
 
@@ -64,7 +63,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[9, BEGIN_ID, END_ID],
                     [2, 9, END_ID],
                     [1, 9, 2]]
-    3.times { s.tick }
+    s.tick
     check_linear_order(s, BEGIN_ID, 9, 1, 2, END_ID)
     check_sem_hist(s, 9 => [], 2 => [9], 1 => [2, 9])
   end
@@ -73,7 +72,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID]]
-    3.times { s.tick }
+    s.tick
+
     check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
     check_sem_hist(s, 1 => [], 2 => [])
   end
@@ -90,20 +90,14 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, 1]]
-    # First tick: non-tiebreaks for 1
-    s.tick
-    # Second tick: tiebreaks for 1, non-tiebreaks for 2
-    s.tick
-    # Third tick: tiebreaks for 2, non-tiebreaks for 3
-    s.tick
 
-    check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
-    assert_equal([[2, 3]], s.use_implied_anc.to_a.sort)
-
-    s.tick      # No-op
-    check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+    # Second iteration should be a no-op
+    2.times do
+      s.tick
+      check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
+      check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+      assert_equal([[2, 3]], s.use_implied_anc.to_a.sort)
+    end
   end
 
   def test_implied_anc_pre
@@ -111,14 +105,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.input_buf <+ [[2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, END_ID],
                     [1, 3, END_ID]]
-    3.times { s.tick }
 
-    check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
-    check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
-
-    s.tick      # No-op
-    check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
-    check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
+    # Second iteration should be a no-op
+    2.times do
+      s.tick
+      check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
+      check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
+    end
   end
 
   # Similar to the above scenario, but slightly more complicated: there are two
@@ -129,9 +122,16 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [2, BEGIN_ID, END_ID],
                     [3, BEGIN_ID, 2],
                     [4, BEGIN_ID, 1]]
-    4.times { s.tick }
-    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
+
+    s.tick
+
+    puts "use_tie: #{s.use_tiebreak.to_a.sort.inspect}"
+    puts "use_anc: #{s.use_implied_anc.to_a.sort.inspect}"
+    puts "explicit: #{s.explicit.to_a.sort.inspect}"
+    puts "explicit_tc: #{s.explicit_tc.to_a.sort.inspect}"
+
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
+    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
   end
 
   def test_doc_tree
