@@ -74,12 +74,22 @@ class ListAppendTest < MiniTest::Unit::TestCase
     # We have Z -> X explicitly. Hypothetical tiebreaks are Y -> Z and X ->
     # Y. However, we should follow causal order when using tiebreaks, which
     # means we should first apply Y -> Z, which implies Y -> X; the latter order
-    # should be preferred over the X -> Y tiebreak. Hence, resulting order
+    # should be preferred over the X -> Y tiebreak. Hence, the correct order
     # should be Y -> Z -> X.
     s.explicit <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
     s.tick
 
     check_linear_order(s, "y", "z", "x")
+  end
+
+  def test_use_ancestor_2
+    s = ListAppend.new
+    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                   ["b", "m"], ["a", "n"]]
+    s.tick
+
+    # XXX: currently fails
+    check_linear_order(s, "m", "b", "n", "a")
   end
 
   def test_two_concurrent_users1
