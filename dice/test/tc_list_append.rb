@@ -88,7 +88,6 @@ class ListAppendTest < MiniTest::Unit::TestCase
                    ["b", "m"], ["a", "n"]]
     s.tick
 
-    # XXX: currently fails
     check_linear_order(s, "m", "b", "n", "a")
   end
 

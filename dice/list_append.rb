@@ -54,6 +54,8 @@ class ListAppend
     poset :safe, [:id, :pred]
     table :safe_tc, safe.schema
 
+    poset :cursor, safe.schema
+
     # Tiebreak order
     table :tiebreak, [:id, :pred]
     table :use_tiebreak, tiebreak.schema
@@ -75,13 +77,14 @@ class ListAppend
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
     tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
+    cursor <= safe_tc
   end
 
   stratum 1 do
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z that
     # is concurrent with y tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (safe_tc * use_tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
+    implied_anc <= (cursor * safe_tc * use_tiebreak).combos(cursor.id => safe_tc.pred, safe_tc.pred => use_tiebreak.id) {|c,s,t| [s.id, t.pred]}
   end
 
   stratum 2 do
@@ -90,7 +93,7 @@ class ListAppend
 
   stratum 3 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    use_tiebreak <= tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
+    use_tiebreak <= (cursor * tiebreak).rights(:id => :id).notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
 
     ord <= safe_tc
     ord <= use_tiebreak
