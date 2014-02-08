@@ -24,8 +24,8 @@ class LinearPrinter
 end
 
 class ListAppendTest < MiniTest::Unit::TestCase
-  def get_linear_order(b)
-    LinearPrinter.new(b).tsort
+  def print_linear_order(b)
+    puts LinearPrinter.new(b).tsort
   end
 
   def check_linear_order(b, *vals)

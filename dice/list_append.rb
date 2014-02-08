@@ -62,7 +62,6 @@ class ListAppend
 
     # Implied-by-ancestor order
     table :use_implied_anc, [:id, :pred]
-    table :use_implied_anc2, [:id, :pred]
 
     # Computed linearization
     table :ord, [:id, :pred]
@@ -82,13 +81,9 @@ class ListAppend
 
   stratum 1 do
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
-    # of y, then x must precede y in the list order. Hence, if any edit z that
-    # is concurrent with y tiebreaks _before_ x, z must also precede y.
+    # of y, then x must precede y in the list order. Hence, if any edit z
+    # tiebreaks _before_ x, z must also precede y.
     use_implied_anc <= (safe_tc * use_tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
-
-    # If x is an ancestor of y and z tiebreaks _after_ y, then x must appear
-    # before z.
-    use_implied_anc <= (safe_tc * use_tiebreak).pairs(:id => :pred) {|s,t| [t.id, s.pred] unless s.pred.nil? }
   end
 
   stratum 2 do
