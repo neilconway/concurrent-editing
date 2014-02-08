@@ -184,7 +184,9 @@ class ListAppendTest < MiniTest::Unit::TestCase
       s = ListAppend.new
       s.explicit <+ edit_list
       s.tick
-      rv << get_linear_order(s)
+      lp = LinearPrinter.new(s)
+      assert_equal(id_list.length + 1, lp.strongly_connected_components.length)
+      rv << lp.tsort
     end
 
     assert_equal(1, rv.uniq.length)
