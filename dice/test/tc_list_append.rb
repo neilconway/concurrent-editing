@@ -84,11 +84,34 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_use_ancestor_2
     s = ListAppend.new
+    # Two concurrent edits (m, n) which each have a child edit (b, a),
+    # respectively; note that the tiebreak between b and n determines how b and
+    # a should be ordered, note the tiebreak between b and a.
     s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
                    ["b", "m"], ["a", "n"]]
     s.tick
 
     check_linear_order(s, "m", "b", "n", "a")
+  end
+
+  def test_use_ancestor_3
+    s = ListAppend.new
+    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                   ["b", "m"], ["a", "n"],
+                   ["c", "b"], ["d", "a"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "c", "n", "a", "d")
+  end
+
+  def test_use_ancestor_4
+    s = ListAppend.new
+    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                   ["b", "m"], ["a", "n"],
+                   ["d", "b"], ["c", "a"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "d", "n", "a", "c")
   end
 
   def test_two_concurrent_users1
