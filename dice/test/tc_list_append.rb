@@ -24,8 +24,8 @@ class LinearPrinter
 end
 
 class ListAppendTest < MiniTest::Unit::TestCase
-  def print_linear_order(b)
-    puts LinearPrinter.new(b).tsort.inspect
+  def get_linear_order(b)
+    LinearPrinter.new(b).tsort
   end
 
   def check_linear_order(b, *vals)
@@ -114,6 +114,16 @@ class ListAppendTest < MiniTest::Unit::TestCase
     check_linear_order(s, "m", "b", "d", "n", "a", "c")
   end
 
+  def test_use_ancestor_5
+    # Three children at the top-level
+    s = ListAppend.new
+    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID], ["o", LIST_START_ID],
+                   ["c", "m"], ["b", "n"], ["a", "o"]]
+    s.tick
+
+    check_linear_order(s, "m", "c", "n", "b", "o", "a")
+  end
+
   def test_two_concurrent_users1
     s = ListAppend.new
     s.explicit <+ [["a1", LIST_START_ID],
@@ -154,5 +164,29 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
     # Note that we interleave edits from different "users"
     check_linear_order(s, "a1", "b1", "x", "y")
+  end
+
+  def test_random_graph
+    id_list = (0..30).map(&:to_s)
+    id_list.shuffle!
+    edit_list = []
+    id_list.each_with_index do |elem,i|
+      if i == 0
+        pred = LIST_START_ID
+      else
+        pred = id_list[rand(i) % i]
+      end
+      edit_list << [elem, pred.to_s]
+    end
+
+    rv = []
+    5.times do
+      s = ListAppend.new
+      s.explicit <+ edit_list
+      s.tick
+      rv << get_linear_order(s)
+    end
+
+    assert_equal(1, rv.uniq.length)
   end
 end
