@@ -1,4 +1,5 @@
 require_relative 'test_common'
+require_relative 'ord_util'
 require_relative '../nm_simple'
 require 'digest/md5'
 
