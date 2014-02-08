@@ -152,7 +152,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
       s.input_buf <+ [i]
       s.tick
     end
-    doc.length.times { s.tick }
+    s.tick
 
     doc_order = doc.map {|d| d.first}
     check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
@@ -173,7 +173,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     end
     s = SimpleNmLinear.new
     s.input_buf <+ doc
-    DOC_SIZE.times { |i| s.tick }
+    s.tick
 
     doc_order = doc.map {|d| d.first}
     check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
