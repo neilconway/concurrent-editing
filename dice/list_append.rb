@@ -84,7 +84,7 @@ class ListAppend
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z that
     # is concurrent with y tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (cursor * safe_tc * use_tiebreak).combos(cursor.id => safe_tc.pred, safe_tc.pred => use_tiebreak.id) {|c,s,t| [s.id, t.pred]}
+    implied_anc <= (safe_tc * use_tiebreak).combos(:pred => :id) {|s,t| [s.id, t.pred]}
   end
 
   stratum 2 do
