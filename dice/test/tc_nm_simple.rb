@@ -121,8 +121,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s = SimpleNmLinear.new
     s.input_buf <+ [[1, BEGIN_ID, END_ID],
                     [2, BEGIN_ID, END_ID],
-                    [3, BEGIN_ID, 2],
-                    [4, BEGIN_ID, 1]]
+                    [4, BEGIN_ID, 1],
+                    [3, BEGIN_ID, 2]]
 
     s.tick
 
@@ -133,6 +133,26 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
     check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
+  end
+
+  def test_implied_anc_concurrent_2
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[8, BEGIN_ID, END_ID],
+                    [9, BEGIN_ID, END_ID],
+                    [2, 8, END_ID],
+                    [1, 9, END_ID]]
+
+    s.tick
+
+    puts "use_tie: #{s.use_tiebreak.to_a.sort.inspect}"
+    puts "use_anc: #{s.use_implied_anc.to_a.sort.inspect}"
+    puts "explicit: #{s.explicit.to_a.sort.inspect}"
+    puts "explicit_tc: #{s.explicit_tc.to_a.sort.inspect}"
+
+    print_linear_order(s)
+
+    check_sem_hist(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
+    check_linear_order(s, BEGIN_ID, 8, 9, 2, 1, END_ID)
   end
 
   def test_doc_tree
