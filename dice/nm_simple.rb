@@ -46,6 +46,7 @@ class SimpleNmLinear
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     poset :sem_hist, [:to, :from]
+    poset :cursor, sem_hist.schema
 
     # Invalid document state
     scratch :doc_fail, [:err]
@@ -74,6 +75,7 @@ class SimpleNmLinear
     sem_hist <= (sem_hist * post_constr).pairs(:from => :id) do |r,c|
       [r.to, c.post]
     end
+    cursor <= sem_hist
 
     explicit <= pre_constr {|c| [c.id, c.pre]}
     explicit <= post_constr {|c| [c.post, c.id]}
@@ -110,7 +112,7 @@ class SimpleNmLinear
   end
 
   stratum 3 do
-    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
+    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 
     ord <= explicit_tc
     ord <= use_implied_anc

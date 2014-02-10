@@ -131,6 +131,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     puts "explicit: #{s.explicit.to_a.sort.inspect}"
     puts "explicit_tc: #{s.explicit_tc.to_a.sort.inspect}"
 
+    print_linear_order(s)
+
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
     check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
   end
@@ -146,6 +148,27 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
     check_sem_hist(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
     check_linear_order(s, BEGIN_ID, 8, 2, 9, 1, END_ID)
+  end
+
+  def test_implied_anc_concurrent_3
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, BEGIN_ID, END_ID],
+                    [4, BEGIN_ID, 1],
+                    [0, BEGIN_ID, 2]]
+
+    s.tick
+
+    puts "use_tie: #{s.use_tiebreak.to_a.sort.inspect}"
+    puts "use_anc: #{s.use_implied_anc.to_a.sort.inspect}"
+    puts "explicit: #{s.explicit.to_a.sort.inspect}"
+    puts "explicit_tc: #{s.explicit_tc.to_a.sort.inspect}"
+
+    print_linear_order(s)
+
+    # XXX update
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
+    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
   end
 
   def test_merge_concurrent_branches
