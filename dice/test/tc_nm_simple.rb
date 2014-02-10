@@ -144,15 +144,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
     s.tick
 
-    puts "use_tie: #{s.use_tiebreak.to_a.sort.inspect}"
-    puts "use_anc: #{s.use_implied_anc.to_a.sort.inspect}"
-    puts "explicit: #{s.explicit.to_a.sort.inspect}"
-    puts "explicit_tc: #{s.explicit_tc.to_a.sort.inspect}"
-
-    print_linear_order(s)
-
     check_sem_hist(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
-    check_linear_order(s, BEGIN_ID, 8, 9, 2, 1, END_ID)
+    check_linear_order(s, BEGIN_ID, 8, 2, 9, 1, END_ID)
+  end
+
+  def test_merge_concurrent_branches
+    # A scenario in which an edit depends on two previous edits that are
+    # concurrent with one another.
   end
 
   def test_doc_tree

@@ -21,5 +21,5 @@ class LinearPrinter
 end
 
 def print_linear_order(b)
-  puts LinearPrinter.new(b).tsort
+  puts LinearPrinter.new(b).tsort.inspect
 end
