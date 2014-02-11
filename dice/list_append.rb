@@ -77,9 +77,7 @@ class ListAppend
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
     tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
     cursor <= safe_tc
-  end
 
-  stratum 1 do
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
