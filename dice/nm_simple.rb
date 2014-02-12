@@ -37,16 +37,19 @@ class SimpleNmLinear
     # want to fallback to using this ordering when no other ordering information
     # is available.
     table :tiebreak, [:id, :pred]
-    table :use_tiebreak, tiebreak.schema
+    scratch :use_tiebreak, tiebreak.schema
+    scratch :tmp_tiebreak, use_tiebreak.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
     table :implied_anc, [:id, :pred]
+    table :implied_anc1, [:id, :pred]
+    table :implied_anc2, [:id, :pred]
     table :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     poset :sem_hist, [:to, :from]
-    poset :cursor, sem_hist.schema
+    po_scratch :cursor, sem_hist.schema
 
     # Invalid document state
     scratch :doc_fail, [:err]
@@ -69,11 +72,11 @@ class SimpleNmLinear
 
     sem_hist <= pre_constr {|c| [c.id, c.pre]}
     sem_hist <= post_constr {|c| [c.id, c.post]}
-    sem_hist <= (sem_hist * pre_constr).pairs(:from => :id) do |r,c|
-      [r.to, c.pre]
+    sem_hist <= (pre_constr * sem_hist).pairs(:pre => :to) do |c,r|
+      [c.id, r.from]
     end
-    sem_hist <= (sem_hist * post_constr).pairs(:from => :id) do |r,c|
-      [r.to, c.post]
+    sem_hist <= (post_constr * sem_hist).pairs(:post => :to) do |c,r|
+      [c.id, r.from]
     end
     cursor <= sem_hist
 
@@ -95,16 +98,18 @@ class SimpleNmLinear
     #
     #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
     #      explicit constraint y < x; this implies z < x.
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.pred,
-                                                                  sem_hist.to => explicit_tc.pred,
-                                                                  sem_hist.from => explicit_tc.id) do |s,t,e|
-      [t.id, s.to]
+    implied_anc1 <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.pred,
+                                                                   sem_hist.to => explicit_tc.pred,
+                                                                   sem_hist.from => explicit_tc.id) do |s,t,e|
+      puts "IMPLIED_ANC1: #{[t.id, s.to]}"; [t.id, s.to]
     end
-    implied_anc <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.id,
-                                                                  sem_hist.to => explicit_tc.id,
-                                                                  sem_hist.from => explicit_tc.pred) do |s,t,e|
+    implied_anc2 <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.id,
+                                                                   sem_hist.to => explicit_tc.id,
+                                                                   sem_hist.from => explicit_tc.pred) do |s,t,e|
       [s.to, t.pred]
     end
+    implied_anc <= implied_anc1
+    implied_anc <= implied_anc2
   end
 
   stratum 2 do
@@ -112,7 +117,11 @@ class SimpleNmLinear
   end
 
   stratum 3 do
-    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
+#    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
+#    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
+    tmp_tiebreak <= (cursor * tiebreak).rights(:from => :id) {|t| puts "PASSED CURSOR CHECK (1): #{t}"; t}
+    tmp_tiebreak <= (cursor * tiebreak).rights(:from => :pred) {|t| puts "PASSED CURSOR CHECK (2): #{t}"; t}
+    use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
 
     ord <= explicit_tc
     ord <= use_implied_anc
