@@ -119,10 +119,15 @@ class SimpleNmLinear
   stratum 3 do
 #    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 #    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
-    tmp_tiebreak <= (cursor * tiebreak).rights(:from => :id) {|t| puts "PASSED CURSOR CHECK (1): #{t}"; t}
-    tmp_tiebreak <= (cursor * tiebreak).rights(:from => :pred) {|t| puts "PASSED CURSOR CHECK (2): #{t}"; t}
+    # tmp_tiebreak <= (cursor * tiebreak).rights(:to => :id) {|t| puts "PASSED CURSOR CHECK (1): #{t}"; t}
+    # tmp_tiebreak <= (cursor * tiebreak).rights(:to => :pred) {|t| puts "PASSED CURSOR CHECK (2): #{t}"; t}
+    # tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [x.to, y.to] if x.to > y.to}
+    tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :from) {|x,y| puts "CHECK: #{[x.to, y.from]}"; [x.to, y.from] if x.to > y.from}
+    tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :from) {|x,y| [y.from, x.to] if x.to < y.from}
     use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
+  end
 
+  stratum 4 do
     ord <= explicit_tc
     ord <= use_implied_anc
     ord <= use_tiebreak
