@@ -169,9 +169,6 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     check_sem_hist(s, 1 => [], 2 => [], 0 => [2], 4 => [1])
   end
 
-  def test_use_implied_anc_2
-  end
-
   def test_deep_right_branch_concurrent_edit_near_root
   end
 
@@ -207,12 +204,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
            [99, 31, 40],
            [40, BEGIN_ID, END_ID],
            [41, 40, END_ID]]
-    input = doc.shuffle
     s = SimpleNmLinear.new
-    input.each do |i|
-      s.input_buf <+ [i]
-      s.tick
-    end
+    s.input_buf <+ doc.shuffle
     s.tick
 
     doc_order = doc.map {|d| d.first}
