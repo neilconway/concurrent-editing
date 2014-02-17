@@ -201,13 +201,23 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [37, 14, END_ID],
                     [45, 14, END_ID],
                     [20, 28, END_ID],
-                    [5, 37, 45]]
+                    [5, 37, 45],
+                    [7, 20, 37]]
     s.tick
 
-    check_linear_order(s, 10, 18, 14, 28, 20, 37, 5, 45)
-    check_sem_hist(s,
-                   10 => [], 18 => [], 14 => [18], 28 => [18], 37 => [14, 18],
-                   45 => [14, 18], 20 => [28, 18], 5 => [37, 45, 14, 18])
+    check_linear_order(s, 10, 18, 14, 28, 20, 7, 37, 5, 45)
+    sem_hist = {
+      10 => [], 18 => [], 14 => [18], 28 => [18], 37 => [14, 18],
+      45 => [14, 18], 20 => [28, 18], 5 => [37, 45, 14, 18],
+      7 => [20, 37, 14, 18, 28]
+    }
+    check_sem_hist(s, sem_hist)
+
+    s.input_buf <+ [[99, 10, 18], [1, 14, 28]]
+    s.tick
+
+    check_linear_order(s, 10, 99, 18, 14, 1, 28, 20, 7, 37, 5, 45)
+    check_sem_hist(s, sem_hist.merge(99 => [10, 18], 1 => [14, 18, 28]))
   end
 
   def test_doc_tree
