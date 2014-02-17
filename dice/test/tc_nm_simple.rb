@@ -37,8 +37,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     check_linear_order(s)
     check_sem_hist(s)
     assert_equal([[END_ID, BEGIN_ID]].to_set, s.explicit.to_set)
-    assert_equal([], s.use_implied_anc.to_a)
-    assert_equal([], s.use_tiebreak.to_a)
+    assert_equal([], s.implied_anc.to_a)
+    assert_equal([], s.tiebreak.to_a)
   end
 
   def test_explicit
@@ -79,7 +79,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
       s.tick
       check_linear_order(s, 3, 1, 2)
       check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
-      assert_equal([[2, 3]], s.use_implied_anc.to_a.sort)
+      assert_equal([[2, 3]].to_set, s.implied_anc.to_set)
     end
   end
 
