@@ -42,8 +42,6 @@ class SimpleNmLinear
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
     table :implied_anc, ord.schema
-    table :implied_anc1, ord.schema
-    table :implied_anc2, ord.schema
     table :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
@@ -78,6 +76,7 @@ class SimpleNmLinear
     cursor <= sem_hist
 
     to_check <= (cursor * sem_hist).pairs {|c,s| [c.to, s.to] if c.to != s.to}
+    to_check <= (cursor * sem_hist).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
     explicit <= pre_constr {|c| [c.id, c.pre]}
     explicit <= post_constr {|c| [c.post, c.id]}
@@ -94,36 +93,20 @@ class SimpleNmLinear
     #
     #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
     #      explicit constraint y < x; this implies z < x.
-    implied_anc1 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
-                                                                              to_check.y => use_tiebreak.id,
-                                                                              sem_hist.from => use_tiebreak.pred,
-                                                                              sem_hist.to => explicit_tc.pred,
-                                                                              sem_hist.from => explicit_tc.id) do |tc,s,t,e|
-      puts "IMPLIED_ANC1A: #{[t.id, s.to]}"; [t.id, s.to]
+    implied_anc <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
+                                                                             to_check.y => use_tiebreak.id,
+                                                                             sem_hist.from => use_tiebreak.pred,
+                                                                             sem_hist.to => explicit_tc.pred,
+                                                                             sem_hist.from => explicit_tc.id) do |tc,s,t,e|
+      [t.id, s.to]
     end
-    implied_anc1 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.y => sem_hist.to,
-                                                                              to_check.x => use_tiebreak.id,
-                                                                              sem_hist.from => use_tiebreak.pred,
-                                                                              sem_hist.to => explicit_tc.pred,
-                                                                              sem_hist.from => explicit_tc.id) do |tc,s,t,e|
-      puts "IMPLIED_ANC1B: #{[t.id, s.to]}"; [t.id, s.to]
+    implied_anc <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
+                                                                             to_check.y => use_tiebreak.pred,
+                                                                             sem_hist.from => use_tiebreak.id,
+                                                                             sem_hist.to => explicit_tc.id,
+                                                                             sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
+      [s.to, t.pred]
     end
-    implied_anc2 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
-                                                                              to_check.y => use_tiebreak.pred,
-                                                                              sem_hist.from => use_tiebreak.id,
-                                                                              sem_hist.to => explicit_tc.id,
-                                                                              sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
-      puts "IMPLIED_ANC2A: #{[t.id, s.to]}"; [s.to, t.pred]
-    end
-    implied_anc2 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.y => sem_hist.to,
-                                                                              to_check.x => use_tiebreak.pred,
-                                                                              sem_hist.from => use_tiebreak.id,
-                                                                              sem_hist.to => explicit_tc.id,
-                                                                              sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
-      puts "IMPLIED_ANC2B: #{[t.id, s.to]}"; [s.to, t.pred]
-    end
-    implied_anc <= implied_anc1
-    implied_anc <= implied_anc2
   end
 
   stratum 2 do
@@ -133,7 +116,7 @@ class SimpleNmLinear
   stratum 3 do
     tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
     tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.x < c.y}
-    use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
+    use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
   end
 
   stratum 4 do
