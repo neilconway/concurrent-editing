@@ -192,6 +192,24 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     check_sem_hist(s, 1 => [], 2 => [], 3 => [1], 4 => [2], 5 => [1,2,3,4])
   end
 
+  def test_tree_1
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[10, BEGIN_ID, END_ID],
+                    [18, BEGIN_ID, END_ID],
+                    [14, 18, END_ID],
+                    [28, 18, END_ID],
+                    [37, 14, END_ID],
+                    [45, 14, END_ID],
+                    [20, 28, END_ID],
+                    [5, 37, 45]]
+    s.tick
+
+    check_linear_order(s, 10, 18, 14, 28, 20, 37, 5, 45)
+    check_sem_hist(s,
+                   10 => [], 18 => [], 14 => [18], 28 => [18], 37 => [14, 18],
+                   45 => [14, 18], 20 => [28, 18], 5 => [37, 45, 14, 18])
+  end
+
   def test_doc_tree
     doc = [[10, BEGIN_ID, END_ID],
            [11, 10, END_ID],
