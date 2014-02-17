@@ -5,6 +5,7 @@ require 'digest/md5'
 
 class NmSimpleTest < MiniTest::Unit::TestCase
   def check_linear_order(b, *vals)
+    vals = [BEGIN_ID] + vals + [END_ID]
     ary = []
     vals.each_with_index do |v,i|
       i.times do |j|
@@ -32,7 +33,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   def test_empty_doc
     s = SimpleNmLinear.new
     s.tick
-    check_linear_order(s, BEGIN_ID, END_ID)
+    check_linear_order(s)
     check_sem_hist(s)
     assert_equal([[END_ID, BEGIN_ID]], s.explicit.to_a)
     assert_equal([], s.use_implied_anc.to_a)
@@ -45,7 +46,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [2, 9, END_ID],
                     [1, 9, 2]]
     s.tick
-    check_linear_order(s, BEGIN_ID, 9, 1, 2, END_ID)
+    check_linear_order(s, 9, 1, 2)
     check_sem_hist(s, 9 => [], 2 => [9], 1 => [2, 9])
   end
 
@@ -55,7 +56,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [2, BEGIN_ID, END_ID]]
     s.tick
 
-    check_linear_order(s, BEGIN_ID, 1, 2, END_ID)
+    check_linear_order(s, 1, 2)
     check_sem_hist(s, 1 => [], 2 => [])
   end
 
@@ -75,7 +76,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     # Second iteration should be a no-op
     2.times do
       s.tick
-      check_linear_order(s, BEGIN_ID, 3, 1, 2, END_ID)
+      check_linear_order(s, 3, 1, 2)
       check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
       assert_equal([[2, 3]], s.use_implied_anc.to_a.sort)
     end
@@ -90,7 +91,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     # Second iteration should be a no-op
     2.times do
       s.tick
-      check_linear_order(s, BEGIN_ID, 2, 3, 1, END_ID)
+      check_linear_order(s, 2, 3, 1)
       check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
     end
   end
@@ -105,8 +106,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [3, BEGIN_ID, 2]]
     s.tick
 
+    check_linear_order(s, 4, 1, 3, 2)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
-    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
   end
 
   def test_implied_anc_concurrent_split_up1
@@ -116,13 +117,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [4, BEGIN_ID, 1]]
     s.tick
 
-    check_linear_order(s, BEGIN_ID, 4, 1, 2, END_ID)
+    check_linear_order(s, 4, 1, 2)
     check_sem_hist(s, 1 => [], 2 => [], 4 => [1])
 
     s.input_buf <+ [[3, BEGIN_ID, 2]]
     s.tick
 
-    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
+    check_linear_order(s, 4, 1, 3, 2)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
 
@@ -133,14 +134,14 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [3, BEGIN_ID, 2]]
     s.tick
 
-    check_linear_order(s, BEGIN_ID, 1, 3, 2, END_ID)
+    check_linear_order(s, 1, 3, 2)
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2])
 
     s.input_buf <+ [[4, BEGIN_ID, 1]]
     s.tick
 
     check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
-    check_linear_order(s, BEGIN_ID, 4, 1, 3, 2, END_ID)
+    check_linear_order(s, 4, 1, 3, 2)
   end
 
   def test_implied_anc_concurrent_2
@@ -152,7 +153,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_sem_hist(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
-    check_linear_order(s, BEGIN_ID, 8, 2, 9, 1, END_ID)
+    check_linear_order(s, 8, 2, 9, 1)
   end
 
   # def test_implied_anc_concurrent_3
@@ -207,7 +208,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     doc_order = doc.map {|d| d.first}
-    check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
+    check_linear_order(s, *doc_order)
     check_sem_hist(s,
                    10 => [], 11 => [10], 12 => [10, 11], 13 => [10, 11, 12],
                    14 => [10,11,12], 15 => [10,11,12,13,14], 30 => [],
@@ -228,7 +229,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     doc_order = doc.map {|d| d.first}
-    check_linear_order(s, BEGIN_ID, *doc_order, END_ID)
+    check_linear_order(s, *doc_order)
 
     sem_hist = {}
     doc.each_with_index do |d,i|
