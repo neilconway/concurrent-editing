@@ -50,6 +50,7 @@ class SimpleNmLinear
     # Semantic causal history; we have [from, to] if "from" happens before "to"
     poset :sem_hist, [:to, :from]
     po_scratch :cursor, sem_hist.schema
+    scratch :to_check, [:x, :y]
 
     # Invalid document state
     scratch :doc_fail, [:err]
@@ -80,11 +81,14 @@ class SimpleNmLinear
     end
     cursor <= sem_hist
 
+    to_check <= (cursor * sem_hist).pairs {|c,s| [c.to, s.to] if c.to != s.to}
+
     explicit <= pre_constr {|c| [c.id, c.pre]}
     explicit <= post_constr {|c| [c.post, c.id]}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
+#    tiebreak <= (constr * constr).pairs {|c1,c2| [c1.id, c2.id] if c1.id > c2.id}
     tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.from, c2.from] if c1.from > c2.from}
     tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.to, c2.to] if c1.to > c2.to}
   end
@@ -98,15 +102,33 @@ class SimpleNmLinear
     #
     #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
     #      explicit constraint y < x; this implies z < x.
-    implied_anc1 <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.pred,
-                                                                   sem_hist.to => explicit_tc.pred,
-                                                                   sem_hist.from => explicit_tc.id) do |s,t,e|
-      puts "IMPLIED_ANC1: #{[t.id, s.to]}"; [t.id, s.to]
+    implied_anc1 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
+                                                                              to_check.y => use_tiebreak.id,
+                                                                              sem_hist.from => use_tiebreak.pred,
+                                                                              sem_hist.to => explicit_tc.pred,
+                                                                              sem_hist.from => explicit_tc.id) do |tc,s,t,e|
+      puts "IMPLIED_ANC1A: #{[t.id, s.to]}"; [t.id, s.to]
     end
-    implied_anc2 <= (sem_hist * use_tiebreak * explicit_tc).combos(sem_hist.from => use_tiebreak.id,
-                                                                   sem_hist.to => explicit_tc.id,
-                                                                   sem_hist.from => explicit_tc.pred) do |s,t,e|
-      [s.to, t.pred]
+    implied_anc1 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.y => sem_hist.to,
+                                                                              to_check.x => use_tiebreak.id,
+                                                                              sem_hist.from => use_tiebreak.pred,
+                                                                              sem_hist.to => explicit_tc.pred,
+                                                                              sem_hist.from => explicit_tc.id) do |tc,s,t,e|
+      puts "IMPLIED_ANC1B: #{[t.id, s.to]}"; [t.id, s.to]
+    end
+    implied_anc2 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
+                                                                              to_check.y => use_tiebreak.pred,
+                                                                              sem_hist.from => use_tiebreak.id,
+                                                                              sem_hist.to => explicit_tc.id,
+                                                                              sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
+      puts "IMPLIED_ANC2A: #{[t.id, s.to]}"; [s.to, t.pred]
+    end
+    implied_anc2 <= (to_check * sem_hist * use_tiebreak * explicit_tc).combos(to_check.y => sem_hist.to,
+                                                                              to_check.x => use_tiebreak.pred,
+                                                                              sem_hist.from => use_tiebreak.id,
+                                                                              sem_hist.to => explicit_tc.id,
+                                                                              sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
+      puts "IMPLIED_ANC2B: #{[t.id, s.to]}"; [s.to, t.pred]
     end
     implied_anc <= implied_anc1
     implied_anc <= implied_anc2
@@ -119,11 +141,15 @@ class SimpleNmLinear
   stratum 3 do
 #    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 #    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
-    # tmp_tiebreak <= (cursor * tiebreak).rights(:to => :id) {|t| puts "PASSED CURSOR CHECK (1): #{t}"; t}
-    # tmp_tiebreak <= (cursor * tiebreak).rights(:to => :pred) {|t| puts "PASSED CURSOR CHECK (2): #{t}"; t}
+    # tmp_tiebreak <= (cursor * tiebreak).pairs(:to => :id) {|c,t| puts "PASSED CURSOR CHECK (1): c = #{c}, t = #{t}"; t}
+    # tmp_tiebreak <= (cursor * tiebreak).pairs(:to => :pred) {|c,t| puts "PASSED CURSOR CHECK (2): c = #{c}, t = #{t}"; t}
+#    tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [x.to, y.to] if x.to > y.to}
+#   tmp_tiebreak <= (cursor * sem_hist).pairs(:from => :from) {|x,y| puts "CHECK: #{x}, #{y}}"; [x.to, y.to] if x.to > y.to}
     # tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [x.to, y.to] if x.to > y.to}
-    tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :from) {|x,y| puts "CHECK: #{[x.to, y.from]}"; [x.to, y.from] if x.to > y.from}
-    tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :from) {|x,y| [y.from, x.to] if x.to < y.from}
+    # tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [y.to, x.to] if x.to < y.to}
+#   tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :to) {|x,y| [y.from, x.to] if x.to < y.from}
+    tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
+    tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.x < c.y}
     use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
   end
 
