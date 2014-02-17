@@ -30,21 +30,20 @@ class SimpleNmLinear
     table :ord, [:id, :pred]
 
     # Explicit orderings
-    table :explicit, [:id, :pred]
+    table :explicit, ord.schema
     table :explicit_tc, explicit.schema
 
     # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    table :tiebreak, [:id, :pred]
-    scratch :use_tiebreak, tiebreak.schema
+    table :use_tiebreak, ord.schema
     scratch :tmp_tiebreak, use_tiebreak.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
-    table :implied_anc, [:id, :pred]
-    table :implied_anc1, [:id, :pred]
-    table :implied_anc2, [:id, :pred]
+    table :implied_anc, ord.schema
+    table :implied_anc1, ord.schema
+    table :implied_anc2, ord.schema
     table :use_implied_anc, implied_anc.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
@@ -87,10 +86,6 @@ class SimpleNmLinear
     explicit <= post_constr {|c| [c.post, c.id]}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
-
-#    tiebreak <= (constr * constr).pairs {|c1,c2| [c1.id, c2.id] if c1.id > c2.id}
-    tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.from, c2.from] if c1.from > c2.from}
-    tiebreak <= (sem_hist * sem_hist).pairs {|c1,c2| [c1.to, c2.to] if c1.to > c2.to}
   end
 
   stratum 1 do
@@ -139,15 +134,6 @@ class SimpleNmLinear
   end
 
   stratum 3 do
-#    use_tiebreak <= tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
-#    use_tiebreak <= (cursor * tiebreak).rights(:to => :id).notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
-    # tmp_tiebreak <= (cursor * tiebreak).pairs(:to => :id) {|c,t| puts "PASSED CURSOR CHECK (1): c = #{c}, t = #{t}"; t}
-    # tmp_tiebreak <= (cursor * tiebreak).pairs(:to => :pred) {|c,t| puts "PASSED CURSOR CHECK (2): c = #{c}, t = #{t}"; t}
-#    tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [x.to, y.to] if x.to > y.to}
-#   tmp_tiebreak <= (cursor * sem_hist).pairs(:from => :from) {|x,y| puts "CHECK: #{x}, #{y}}"; [x.to, y.to] if x.to > y.to}
-    # tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [x.to, y.to] if x.to > y.to}
-    # tmp_tiebreak <= (cursor * cursor).pairs {|x,y| [y.to, x.to] if x.to < y.to}
-#   tmp_tiebreak <= (cursor * sem_hist).pairs(:to => :to) {|x,y| [y.from, x.to] if x.to < y.from}
     tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
     tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.x < c.y}
     use_tiebreak <= tmp_tiebreak.notin(use_implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id).pro {|t| puts "USE_TIE: #{t}"; t}
