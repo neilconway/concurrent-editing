@@ -165,10 +165,8 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [0, BEGIN_ID, 2]]
     s.tick
 
-    print_linear_order(s)
-
-    check_sem_hist(s, 1 => [], 2 => [], 0 => [2], 4 => [1])
     check_linear_order(s, 0, 4, 1, 2)
+    check_sem_hist(s, 1 => [], 2 => [], 0 => [2], 4 => [1])
   end
 
   def test_use_implied_anc_2
@@ -180,6 +178,21 @@ class NmSimpleTest < MiniTest::Unit::TestCase
   def test_merge_concurrent_branches
     # A scenario in which an edit depends on two previous edits that are
     # concurrent with one another.
+    s = SimpleNmLinear.new
+    s.input_buf <+ [[1, BEGIN_ID, END_ID],
+                    [2, BEGIN_ID, END_ID],
+                    [3, 1, END_ID],
+                    [4, 2, END_ID]]
+    s.tick
+
+    check_linear_order(s, 1, 2, 3, 4)
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [1], 4 => [2])
+
+    s.input_buf <+ [[5, 3, 4]]
+    s.tick
+
+    check_linear_order(s, 1, 2, 3, 5, 4)
+    check_sem_hist(s, 1 => [], 2 => [], 3 => [1], 4 => [2], 5 => [1,2,3,4])
   end
 
   def test_doc_tree
