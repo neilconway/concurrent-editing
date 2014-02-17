@@ -50,9 +50,6 @@ class SimpleNmLinear
     poset :sem_hist, [:to, :from]
     po_scratch :cursor, sem_hist.schema
     scratch :to_check, [:x, :y]
-
-    # Invalid document state
-    scratch :doc_fail, [:err]
   end
 
   bootstrap do
@@ -143,26 +140,5 @@ class SimpleNmLinear
     ord <= explicit_tc
     ord <= use_implied_anc
     ord <= use_tiebreak
-
-    stdio <~ doc_fail {|e| raise InvalidDocError, e.inspect }
-
-    # Only sentinels can have nil pre/post edges, but those never appear in the
-    # input_buf. (Raising an error here isn't strictly necessary; such malformed
-    # inputs would never be removed from input_buf anyway.)
-    doc_fail <= input_buf {|c| [c] if c.pre.nil? || c.post.nil?}
-
-    # Constraint graph should be acyclic
-    doc_fail <= explicit_tc {|c| [c] if c.pred == c.id}
-
-    # Note that the above rules ensure that BEGIN is not a post edge and END is
-    # not a pre edge of any constraint; this would imply either a cycle or a nil
-    # edge.
-
-    # XXX, not yet enforced: at originating site, pre/post edges should be
-    # adjacent at the time a new constraint is added.
-
-    # XXX, not yet enforced: constraints on output linearization. (Unlike the
-    # input constraints, these are just checking the correctness of the
-    # algorithm, not whether the input is legal.)
   end
 end
