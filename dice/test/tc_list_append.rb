@@ -75,18 +75,10 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
     s.tick
 
-    puts "use_tie: #{s.tiebreak.to_a.sort}"
-    puts "use_implied_anc: #{s.implied_anc.to_a.sort}"
-    puts "safe_tc: #{s.safe_tc.to_a.sort}"
-
     check_linear_order(s, "m", "n")
 
     s.input_buf <+ [["b", "m"], ["a", "n"]]
     s.tick
-
-    puts "use_tie: #{s.tiebreak.to_a.sort}"
-    puts "use_implied_anc: #{s.implied_anc.to_a.sort}"
-    puts "safe_tc: #{s.safe_tc.to_a.sort}"
 
     check_linear_order(s, "m", "b", "n", "a")
   end
@@ -98,7 +90,25 @@ class ListAppendTest < MiniTest::Unit::TestCase
                     ["c", "b"], ["d", "a"]]
     s.tick
 
+    print_linear_order(s)
+
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
+  end
+
+  def test_use_ancestor_3_split
+    s = ListAppend.new
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                    ["b", "m"], ["a", "n"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n", "a")
+
+    puts "********** TICK 1 FINISHED ***********"
+
+    s.input_buf <+ [["c", "b"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "c", "n", "a")
   end
 
   def test_use_ancestor_4

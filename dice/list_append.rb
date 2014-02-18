@@ -54,14 +54,15 @@ class ListAppend
     # relationship between IDs: X happens before Y if there is a (directed) path
     # from Y -> X in the predecessor graph.
     table :input_buf, [:id] => [:pred]
-    po_table :safe, [:id, :pred]
-    table :safe_tc, safe.schema
+    table :safe, [:id, :pred]
+    po_table :safe_tc, safe.schema
 
     po_scratch :cursor, safe.schema
+    scratch :to_check, [:x, :y]
 
     # Tiebreak order
-    table :raw_tiebreak, safe.schema
-    table :tiebreak, raw_tiebreak.schema
+    scratch :tmp_tiebreak, safe.schema
+    table :tiebreak, tmp_tiebreak.schema
 
     # Implied-by-ancestor order
     table :implied_anc, safe.schema
@@ -78,18 +79,26 @@ class ListAppend
     safe <= (input_buf * safe).lefts(:pred => :id)
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
-    raw_tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
     cursor <= safe_tc
+
+    to_check <= (cursor * safe_tc).pairs {|c,s| [c.id, s.id] if c.id != s.id}
+    to_check <= (cursor * safe_tc).pairs {|c,s| [s.id, c.id] if c.id != s.id}
 
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (safe_tc * tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
+    implied_anc <= (to_check * safe_tc * tiebreak).combos(to_check.x => safe_tc.id,
+                                                          to_check.y => tiebreak.pred,
+                                                          safe_tc.pred => tiebreak.id) do |tc,s,t|
+      puts "IMPLIED_ANC: #{s} + #{t} => #{[s.id, t.pred]}"; [s.id, t.pred]
+    end
   end
 
   stratum 2 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    tiebreak <= (cursor * raw_tiebreak).rights(:id => :id).notin(safe_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
+    tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
+    tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.y > c.x}
+    tiebreak <= tmp_tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id).pro {|t| puts "TIEBREAK: #{t}"; t}
 
     ord <= safe_tc
     ord <= tiebreak
