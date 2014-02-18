@@ -45,26 +45,29 @@ class ListAppend
   include Bud
 
   state do
-    # The explicit partial order; "id" comes after "anchor". Each ID has exactly
-    # one anchor, but a given ID might anchor zero or more other IDs. Note that
-    # this defines both a partial order over the document as well as a
-    # (semantic) causal relationship between IDs: X happens before Y if there is
-    # a (directed) path from Y -> X in the anchor graph.
-    table :explicit, [:id] => [:anchor]
+    # The explicit partial order; "id" comes after "pred". Each ID specifies
+    # exactly one predecessor, but a given ID might be the predecessor to zero
+    # or more other IDs. Note that the "pred" element might not immediately
+    # precede "id" in the final version of the list (other edits, made locally
+    # or at a remote site, might intervene). Note that this defines both a
+    # partial order over the document as well as a (semantic) causal
+    # relationship between IDs: X happens before Y if there is a (directed) path
+    # from Y -> X in the predecessor graph.
+    table :explicit, [:id] => [:pred]
     poset :safe, [:id, :pred]
     table :safe_tc, safe.schema
 
     po_scratch :cursor, safe.schema
 
     # Tiebreak order
-    table :tiebreak, [:id, :pred]
+    table :tiebreak, safe.schema
     table :use_tiebreak, tiebreak.schema
 
     # Implied-by-ancestor order
-    table :use_implied_anc, [:id, :pred]
+    table :use_implied_anc, safe.schema
 
     # Computed linearization
-    table :ord, [:id, :pred]
+    table :ord, safe.schema
   end
 
   bootstrap do
@@ -72,7 +75,7 @@ class ListAppend
   end
 
   stratum 0 do
-    safe <= (explicit * safe).lefts(:anchor => :id)
+    safe <= (explicit * safe).lefts(:pred => :id)
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
     tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
