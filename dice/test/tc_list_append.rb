@@ -61,7 +61,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s = ListAppend.new
     # Two concurrent edits (m, n) which each have a child edit (b, a),
     # respectively; note that the tiebreak between b and n determines how b and
-    # a should be ordered, note the tiebreak between b and a.
+    # a should be ordered, not the tiebreak between b and a.
     s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
                    ["b", "m"], ["a", "n"]]
     s.tick
