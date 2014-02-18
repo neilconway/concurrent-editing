@@ -54,7 +54,7 @@ class ListAppend
     poset :safe, [:id, :pred]
     table :safe_tc, safe.schema
 
-    poset :cursor, safe.schema
+    po_scratch :cursor, safe.schema
 
     # Tiebreak order
     table :tiebreak, [:id, :pred]
