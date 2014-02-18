@@ -17,7 +17,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_safe_tc
     s = ListAppend.new
-    s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
+    s.input_buf <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
     s.tick
 
     assert_equal([["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"],
@@ -30,7 +30,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_linear_chain
     s = ListAppend.new
-    s.explicit <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
+    s.input_buf <+ [["a", LIST_START_ID], ["b", "a"], ["c", "b"]]
     s.tick
 
     check_linear_order(s, "a", "b", "c")
@@ -38,7 +38,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_simple_tiebreak
     s = ListAppend.new
-    s.explicit <+ [["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID]]
+    s.input_buf <+ [["a", LIST_START_ID], ["b", LIST_START_ID], ["c", LIST_START_ID]]
     s.tick
 
     check_linear_order(s, "a", "b", "c")
@@ -51,7 +51,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     # means we should first apply Y -> Z, which implies Y -> X; the latter order
     # should be preferred over the X -> Y tiebreak. Hence, the correct order
     # should be Y -> Z -> X.
-    s.explicit <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
+    s.input_buf <+ [["z", LIST_START_ID], ["x", "z"], ["y", LIST_START_ID]]
     s.tick
 
     check_linear_order(s, "y", "z", "x")
@@ -62,8 +62,8 @@ class ListAppendTest < MiniTest::Unit::TestCase
     # Two concurrent edits (m, n) which each have a child edit (b, a),
     # respectively; note that the tiebreak between b and n determines how b and
     # a should be ordered, not the tiebreak between b and a.
-    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
-                   ["b", "m"], ["a", "n"]]
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                    ["b", "m"], ["a", "n"]]
     s.tick
 
     check_linear_order(s, "m", "b", "n", "a")
@@ -72,21 +72,30 @@ class ListAppendTest < MiniTest::Unit::TestCase
   def test_use_ancestor_2_split
     s = ListAppend.new
     # Same as before, but divided into multiple ticks
-    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
     s.tick
+
+    puts "use_tie: #{s.tiebreak.to_a.sort}"
+    puts "use_implied_anc: #{s.implied_anc.to_a.sort}"
+    puts "safe_tc: #{s.safe_tc.to_a.sort}"
 
     check_linear_order(s, "m", "n")
 
-    s.explicit <+ [["b", "m"], ["a", "n"]]
+    s.input_buf <+ [["b", "m"], ["a", "n"]]
     s.tick
+
+    puts "use_tie: #{s.tiebreak.to_a.sort}"
+    puts "use_implied_anc: #{s.implied_anc.to_a.sort}"
+    puts "safe_tc: #{s.safe_tc.to_a.sort}"
+
     check_linear_order(s, "m", "b", "n", "a")
   end
 
   def test_use_ancestor_3
     s = ListAppend.new
-    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
-                   ["b", "m"], ["a", "n"],
-                   ["c", "b"], ["d", "a"]]
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                    ["b", "m"], ["a", "n"],
+                    ["c", "b"], ["d", "a"]]
     s.tick
 
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
@@ -94,9 +103,9 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_use_ancestor_4
     s = ListAppend.new
-    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
-                   ["b", "m"], ["a", "n"],
-                   ["d", "b"], ["c", "a"]]
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                    ["b", "m"], ["a", "n"],
+                    ["d", "b"], ["c", "a"]]
     s.tick
 
     check_linear_order(s, "m", "b", "d", "n", "a", "c")
@@ -105,8 +114,8 @@ class ListAppendTest < MiniTest::Unit::TestCase
   def test_use_ancestor_5
     # Three children at the top-level
     s = ListAppend.new
-    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID], ["o", LIST_START_ID],
-                   ["c", "m"], ["b", "n"], ["a", "o"]]
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID], ["o", LIST_START_ID],
+                    ["c", "m"], ["b", "n"], ["a", "o"]]
     s.tick
 
     check_linear_order(s, "m", "c", "n", "b", "o", "a")
@@ -114,14 +123,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_two_concurrent_users1
     s = ListAppend.new
-    s.explicit <+ [["a1", LIST_START_ID],
-                   ["a2", "a1"],
-                   ["a3", "a2"],
-                   ["a4", "a3"],
-                   ["b1", LIST_START_ID],
-                   ["b2", "b1"],
-                   ["b3", "b2"],
-                   ["b4", "b3"]]
+    s.input_buf <+ [["a1", LIST_START_ID],
+                    ["a2", "a1"],
+                    ["a3", "a2"],
+                    ["a4", "a3"],
+                    ["b1", LIST_START_ID],
+                    ["b2", "b1"],
+                    ["b3", "b2"],
+                    ["b4", "b3"]]
     s.tick
 
     check_linear_order(s, "a1", "a2", "a3", "a4", "b1", "b2", "b3", "b4")
@@ -129,14 +138,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_two_concurrent_users2
     s = ListAppend.new
-    s.explicit <+ [["c1", LIST_START_ID],
-                   ["c2", "c1"],
-                   ["c3", "c2"],
-                   ["c4", "c3"],
-                   ["b1", LIST_START_ID],
-                   ["b2", "b1"],
-                   ["b3", "b2"],
-                   ["b4", "b3"]]
+    s.input_buf <+ [["c1", LIST_START_ID],
+                    ["c2", "c1"],
+                    ["c3", "c2"],
+                    ["c4", "c3"],
+                    ["b1", LIST_START_ID],
+                    ["b2", "b1"],
+                    ["b3", "b2"],
+                    ["b4", "b3"]]
     s.tick
 
     check_linear_order(s, "b1", "b2", "b3", "b4", "c1", "c2", "c3", "c4")
@@ -144,10 +153,10 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
   def test_two_concurrent_users3
     s = ListAppend.new
-    s.explicit <+ [["a1", LIST_START_ID],
-                   ["b1", LIST_START_ID],
-                   ["y", "a1"],
-                   ["x", "b1"]]
+    s.input_buf <+ [["a1", LIST_START_ID],
+                    ["b1", LIST_START_ID],
+                    ["y", "a1"],
+                    ["x", "b1"]]
     s.tick
 
     # Note that we interleave edits from different "users"
@@ -170,7 +179,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     rv = []
     5.times do
       s = ListAppend.new
-      s.explicit <+ edit_list
+      s.input_buf <+ edit_list
       s.tick
       lp = LinearPrinter.new(s)
       assert_equal(id_list.length + 1, lp.strongly_connected_components.length)

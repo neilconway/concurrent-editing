@@ -53,18 +53,18 @@ class ListAppend
     # partial order over the document as well as a (semantic) causal
     # relationship between IDs: X happens before Y if there is a (directed) path
     # from Y -> X in the predecessor graph.
-    table :explicit, [:id] => [:pred]
+    table :input_buf, [:id] => [:pred]
     po_table :safe, [:id, :pred]
     table :safe_tc, safe.schema
 
     po_scratch :cursor, safe.schema
 
     # Tiebreak order
-    table :tiebreak, safe.schema
-    table :use_tiebreak, tiebreak.schema
+    table :raw_tiebreak, safe.schema
+    table :tiebreak, raw_tiebreak.schema
 
     # Implied-by-ancestor order
-    table :use_implied_anc, safe.schema
+    table :implied_anc, safe.schema
 
     # Computed linearization
     table :ord, safe.schema
@@ -75,24 +75,24 @@ class ListAppend
   end
 
   stratum 0 do
-    safe <= (explicit * safe).lefts(:pred => :id)
+    safe <= (input_buf * safe).lefts(:pred => :id)
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
-    tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
+    raw_tiebreak <= (safe * safe).pairs {|x,y| [x.id, y.id] if x.id > y.id}
     cursor <= safe_tc
 
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
-    use_implied_anc <= (safe_tc * use_tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
+    implied_anc <= (safe_tc * tiebreak).pairs(:pred => :id) {|s,t| [s.id, t.pred]}
   end
 
   stratum 2 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    use_tiebreak <= (cursor * tiebreak).rights(:id => :id).notin(safe_tc, :id => :pred, :pred => :id).notin(use_implied_anc, :id => :pred, :pred => :id)
+    tiebreak <= (cursor * raw_tiebreak).rights(:id => :id).notin(safe_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
 
     ord <= safe_tc
-    ord <= use_tiebreak
-    ord <= use_implied_anc
+    ord <= tiebreak
+    ord <= implied_anc
   end
 end
