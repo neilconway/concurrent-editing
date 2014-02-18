@@ -69,6 +69,19 @@ class ListAppendTest < MiniTest::Unit::TestCase
     check_linear_order(s, "m", "b", "n", "a")
   end
 
+  def test_use_ancestor_2_split
+    s = ListAppend.new
+    # Same as before, but divided into multiple ticks
+    s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
+    s.tick
+
+    check_linear_order(s, "m", "n")
+
+    s.explicit <+ [["b", "m"], ["a", "n"]]
+    s.tick
+    check_linear_order(s, "m", "b", "n", "a")
+  end
+
   def test_use_ancestor_3
     s = ListAppend.new
     s.explicit <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
