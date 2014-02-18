@@ -44,7 +44,7 @@ class SimpleNmLinear
     table :implied_anc, ord.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
-    poset :sem_hist, [:to, :from]
+    po_table :sem_hist, [:to, :from]
     po_scratch :cursor, sem_hist.schema
     scratch :to_check, [:x, :y]
   end

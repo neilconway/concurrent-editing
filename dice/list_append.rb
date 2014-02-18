@@ -54,7 +54,7 @@ class ListAppend
     # relationship between IDs: X happens before Y if there is a (directed) path
     # from Y -> X in the predecessor graph.
     table :explicit, [:id] => [:pred]
-    poset :safe, [:id, :pred]
+    po_table :safe, [:id, :pred]
     table :safe_tc, safe.schema
 
     po_scratch :cursor, safe.schema
