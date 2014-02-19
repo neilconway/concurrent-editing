@@ -83,6 +83,42 @@ class ListAppendTest < MiniTest::Unit::TestCase
     check_linear_order(s, "m", "b", "n", "a")
   end
 
+  def test_use_ancestor_2_split_a
+    s = ListAppend.new
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
+    s.tick
+
+    check_linear_order(s, "m", "n")
+
+    s.input_buf <+ [["a", "n"]]
+    s.tick
+
+    check_linear_order(s, "m", "n", "a")
+
+    s.input_buf <+ [["b", "m"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n", "a")
+  end
+
+  def test_use_ancestor_2_split_b
+    s = ListAppend.new
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
+    s.tick
+
+    check_linear_order(s, "m", "n")
+
+    s.input_buf <+ [["b", "m"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n")
+
+    s.input_buf <+ [["a", "n"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n", "a")
+  end
+
   def test_use_ancestor_3
     s = ListAppend.new
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
