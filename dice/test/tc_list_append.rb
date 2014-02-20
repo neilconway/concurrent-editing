@@ -81,12 +81,10 @@ class ListAppendTest < MiniTest::Unit::TestCase
     # Same as before, but divided into multiple ticks
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
     s.tick
-
     check_linear_order(s, "m", "n")
 
     s.input_buf <+ [["b", "m"], ["a", "n"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a")
   end
 
@@ -94,17 +92,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s = ListAppend.new
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
     s.tick
-
     check_linear_order(s, "m", "n")
 
     s.input_buf <+ [["a", "n"]]
     s.tick
-
     check_linear_order(s, "m", "n", "a")
 
     s.input_buf <+ [["b", "m"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a")
   end
 
@@ -112,17 +107,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s = ListAppend.new
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID]]
     s.tick
-
     check_linear_order(s, "m", "n")
 
     s.input_buf <+ [["b", "m"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n")
 
     s.input_buf <+ [["a", "n"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a")
   end
 
@@ -132,8 +124,6 @@ class ListAppendTest < MiniTest::Unit::TestCase
                     ["b", "m"], ["a", "n"],
                     ["c", "b"], ["d", "a"]]
     s.tick
-
-    print_linear_order(s)
 
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
