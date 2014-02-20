@@ -93,7 +93,7 @@ class ListAppend
     implied_anc <= (to_check * all_safe_tc * tiebreak).combos(to_check.x => all_safe_tc.id,
                                                               to_check.y => tiebreak.pred,
                                                               all_safe_tc.pred => tiebreak.id) do |tc,s,t|
-      puts [s.id, t.pred]
+      [s.id, t.pred]
     end
   end
 

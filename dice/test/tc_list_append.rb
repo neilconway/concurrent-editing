@@ -153,10 +153,10 @@ class ListAppendTest < MiniTest::Unit::TestCase
 
     check_linear_order(s, "m", "b", "c", "n", "a")
 
-    # s.input_buf <+ [["d", "a"]]
-    # s.tick
+    s.input_buf <+ [["d", "a"]]
+    s.tick
 
-    # check_linear_order(s, "m", "b", "c", "n", "a", "d")
+    check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
 
   def test_use_ancestor_3_split_b
