@@ -12,7 +12,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
       end
     end
     ary << LIST_START_TUPLE
-    assert_equal(ary.sort, b.ord.to_a.sort)
+    expected = ary.to_set
+    actual = b.ord.to_set
+    if expected != actual
+      puts "!! ORDER MISMATCH !!"
+      puts "Extra Orders: #{(actual - expected).to_a.sort}"
+      puts "Missing Orders: #{(expected - actual).to_a.sort}"
+    end
+    assert_equal(expected, actual)
   end
 
   def test_safe_tc
@@ -131,7 +138,7 @@ class ListAppendTest < MiniTest::Unit::TestCase
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
 
-  def test_use_ancestor_3_split
+  def test_use_ancestor_3_split_a
     s = ListAppend.new
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
                     ["b", "m"], ["a", "n"]]
@@ -145,6 +152,30 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, "m", "b", "c", "n", "a")
+
+    # s.input_buf <+ [["d", "a"]]
+    # s.tick
+
+    # check_linear_order(s, "m", "b", "c", "n", "a", "d")
+  end
+
+  def test_use_ancestor_3_split_b
+    s = ListAppend.new
+    s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
+                    ["b", "m"], ["a", "n"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n", "a")
+
+    s.input_buf <+ [["d", "a"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "n", "a", "d")
+
+    s.input_buf <+ [["c", "b"]]
+    s.tick
+
+    check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
 
   def test_use_ancestor_4
