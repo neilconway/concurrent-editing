@@ -143,19 +143,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
                     ["b", "m"], ["a", "n"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a")
-
-    puts "********** TICK 1 FINISHED ***********"
 
     s.input_buf <+ [["c", "b"]]
     s.tick
-
     check_linear_order(s, "m", "b", "c", "n", "a")
 
     s.input_buf <+ [["d", "a"]]
     s.tick
-
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
 
@@ -164,17 +159,14 @@ class ListAppendTest < MiniTest::Unit::TestCase
     s.input_buf <+ [["m", LIST_START_ID], ["n", LIST_START_ID],
                     ["b", "m"], ["a", "n"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a")
 
     s.input_buf <+ [["d", "a"]]
     s.tick
-
     check_linear_order(s, "m", "b", "n", "a", "d")
 
     s.input_buf <+ [["c", "b"]]
     s.tick
-
     check_linear_order(s, "m", "b", "c", "n", "a", "d")
   end
 
@@ -209,8 +201,11 @@ class ListAppendTest < MiniTest::Unit::TestCase
                     ["b3", "b2"],
                     ["b4", "b3"]]
     s.tick
-
     check_linear_order(s, "a1", "a2", "a3", "a4", "b1", "b2", "b3", "b4")
+
+    s.input_buf <+ [["b5", "b4"], ["a0", "a1"]]
+    s.tick
+    check_linear_order(s, "a1", "a0", "a2", "a3", "a4", "b1", "b2", "b3", "b4", "b5")
   end
 
   def test_two_concurrent_users2
@@ -224,8 +219,11 @@ class ListAppendTest < MiniTest::Unit::TestCase
                     ["b3", "b2"],
                     ["b4", "b3"]]
     s.tick
-
     check_linear_order(s, "b1", "b2", "b3", "b4", "c1", "c2", "c3", "c4")
+
+    s.input_buf <+ [["b5", "b4"], ["c0", "c1"]]
+    s.tick
+    check_linear_order(s, "b1", "b2", "b3", "b4", "b5", "c1", "c0", "c2", "c3", "c4")
   end
 
   def test_two_concurrent_users3
