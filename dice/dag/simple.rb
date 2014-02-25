@@ -42,7 +42,6 @@ class SimpleGraph
         end
       end.compact
     end.to_set
-#    @frontier = new_frontier
   end
 
   def print_nodes(s)
