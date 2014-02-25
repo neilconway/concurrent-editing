@@ -5,8 +5,7 @@ Node = Struct.new(:id, :parents, :path_len)
 class SimpleGraph
   def initialize
     @nodes = {}
-    @frontier = nil
-    @current_strat = 0
+    reset
   end
 
   # Insert a new partial ordering, y < x; we assume this does not introduce a
@@ -23,31 +22,27 @@ class SimpleGraph
 
   def update_path_len(n, v)
     return if n.path_len >= v
-
     n.path_len = v
-    n.parents.each do |p|
-      update_path_len(p, v + 1)
-    end
+    n.parents.each {|p| update_path_len(p, v + 1)}
   end
 
   def reset
     @frontier = @nodes.values.select {|n| n.path_len == 0}.to_set
-    @current_strat = 0
+    @current_stratum = 0
   end
 
-  def advance_strat
-    @current_strat += 1
-    new_frontier = Set.new
-    @frontier.each do |n|
-      n.parents.each do |p|
-        if p.path_len == @current_strat
-          new_frontier << p
-        elsif p.path_len > @current_strat
-          new_frontier << n
+  def advance_stratum
+    @current_stratum += 1
+    @frontier = @frontier.flat_map do |n|
+      n.parents.map do |p|
+        if p.path_len == @current_stratum
+          p
+        elsif p.path_len > @current_stratum
+          n
         end
-      end
-    end
-    @frontier = new_frontier
+      end.compact
+    end.to_set
+#    @frontier = new_frontier
   end
 
   def print_nodes(s)
@@ -57,7 +52,7 @@ class SimpleGraph
   def each_raw(&blk)
     @frontier.each do |n|
       n.parents.each do |p|
-        blk.call(n, p) if p.path_len == @current_strat + 1
+        blk.call(n, p) if p.path_len == @current_stratum + 1
       end
     end
   end
@@ -70,7 +65,7 @@ class SimpleGraph
       each_raw {|n,p| strat << [n.id, p.id]}
       break if strat.empty?
       rv << strat.sort
-      advance_strat
+      advance_stratum
     end
     rv
   end
