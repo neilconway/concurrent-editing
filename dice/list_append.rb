@@ -49,10 +49,10 @@ class ListAppend
     # exactly one predecessor, but a given ID might be the predecessor to zero
     # or more other IDs. Note that the "pred" element might not immediately
     # precede "id" in the final version of the list (other edits, made locally
-    # or at a remote site, might intervene). Note that this defines both a
-    # partial order over the document as well as a (semantic) causal
-    # relationship between IDs: X happens before Y if there is a (directed) path
-    # from Y -> X in the predecessor graph.
+    # or at a remote site, might intervene). This defines both a partial order
+    # over the document as well as a (semantic) causal relationship between IDs:
+    # X happens before Y if there is a (directed) path from Y -> X in the
+    # predecessor graph.
     table :input_buf, [:id] => [:pred]
     table :safe, [:id, :pred]
     table :all_safe_tc, safe.schema
