@@ -6,8 +6,6 @@ require 'bud'
 BEGIN_ID = Float::INFINITY
 END_ID = -Float::INFINITY
 
-class InvalidDocError < StandardError; end
-
 class SimpleNmLinear
   include Bud
 

@@ -1,8 +1,8 @@
 require 'set'
 
-Node = Struct.new(:id, :parents, :path_len)
-
 class SimpleGraph
+  Node = Struct.new(:id, :parents, :path_len)
+
   def initialize
     @nodes = {}
     reset
