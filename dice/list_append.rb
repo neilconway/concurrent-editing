@@ -55,8 +55,8 @@ class ListAppend
     # predecessor graph.
     table :input_buf, [:id] => [:pred]
     table :safe, [:id, :pred]
-    table :all_safe_tc, safe.schema
-    po_scratch :safe_tc, safe.schema
+    table :safe_tc, safe.schema
+    po_scratch :causal_ord, safe.schema
 
     po_scratch :cursor, safe.schema
     scratch :to_check, [:x, :y]
@@ -78,21 +78,21 @@ class ListAppend
 
   stratum 0 do
     safe <= (input_buf * safe).lefts(:pred => :id)
+    causal_ord <= safe
+    causal_ord <= (safe * causal_ord).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
+    cursor <= causal_ord
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
-    cursor <= safe_tc
-    all_safe_tc <= safe
-    all_safe_tc <= (safe * all_safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
 
-    to_check <= (cursor * safe_tc).pairs {|c,s| [c.id, s.id] if c.id != s.id}
-    to_check <= (cursor * safe_tc).pairs {|c,s| [s.id, c.id] if c.id != s.id}
+    to_check <= (cursor * causal_ord).pairs {|c,s| [c.id, s.id] if c.id != s.id}
+    to_check <= (cursor * causal_ord).pairs {|c,s| [s.id, c.id] if c.id != s.id}
 
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (to_check * all_safe_tc * tiebreak).combos(to_check.x => all_safe_tc.id,
+    implied_anc <= (to_check * safe_tc * tiebreak).combos(to_check.x => safe_tc.id,
                                                               to_check.y => tiebreak.pred,
-                                                              all_safe_tc.pred => tiebreak.id) do |tc,s,t|
+                                                              safe_tc.pred => tiebreak.id) do |tc,s,t|
       [s.id, t.pred]
     end
   end
