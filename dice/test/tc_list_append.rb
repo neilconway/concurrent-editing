@@ -22,17 +22,17 @@ class ListAppendTest < MiniTest::Unit::TestCase
     assert_equal(expected, actual)
   end
 
-  def test_safe_tc
+  def test_explicit_tc
     s = ListAppend.new
     s.input_buf <+ [["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"], ["f", "e"]]
     s.tick
 
     assert_equal([["a", LIST_START_ID], ["b", "a"], ["c", "a"], ["d", "c"],
-                  LIST_START_TUPLE].to_set, s.safe.to_set)
+                  LIST_START_TUPLE].to_set, s.explicit.to_set)
     assert_equal([["a", LIST_START_ID], ["b", LIST_START_ID],
                   ["c", LIST_START_ID], ["d", LIST_START_ID],
                   ["b", "a"], ["c", "a"], ["d", "c"], ["d", "a"],
-                  LIST_START_TUPLE].to_set, s.safe_tc.to_set)
+                  LIST_START_TUPLE].to_set, s.explicit_tc.to_set)
   end
 
   def test_linear_chain

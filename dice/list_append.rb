@@ -54,36 +54,36 @@ class ListAppend
     # X happens before Y if there is a (directed) path from Y -> X in the
     # predecessor graph.
     table :input_buf, [:id] => [:pred]
-    table :safe, [:id, :pred]
-    table :safe_tc, safe.schema
-    po_scratch :causal_ord, safe.schema
+    table :explicit, [:id, :pred]
+    table :explicit_tc, explicit.schema
+    po_scratch :causal_ord, explicit.schema
 
-    po_scratch :cursor, safe.schema
+    po_scratch :cursor, explicit.schema
     scratch :to_check, [:x, :y]
 
     # Tiebreak order
-    scratch :tmp_tiebreak, safe.schema
+    scratch :tmp_tiebreak, explicit.schema
     table :tiebreak, tmp_tiebreak.schema
 
     # Implied-by-ancestor order
-    table :implied_anc, safe.schema
+    table :implied_anc, explicit.schema
 
     # Computed linearization
-    table :ord, safe.schema
+    table :ord, explicit.schema
   end
 
   bootstrap do
-    safe <+ [LIST_START_TUPLE]
+    explicit <+ [LIST_START_TUPLE]
   end
 
   stratum 0 do
-    safe <= (input_buf * safe).lefts(:pred => :id)
+    explicit <= (input_buf * explicit).lefts(:pred => :id)
 
-    safe_tc <= safe
-    safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
+    explicit_tc <= explicit
+    explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred] unless t == LIST_START_TUPLE}
 
-    causal_ord <= safe_tc
-    cursor     <= safe_tc
+    causal_ord <= explicit_tc
+    cursor     <= explicit_tc
 
     to_check <= (cursor * causal_ord).pairs {|c,s| [c.id, s.id] if c.id != s.id}
     to_check <= (cursor * causal_ord).pairs {|c,s| [s.id, c.id] if c.id != s.id}
@@ -91,9 +91,9 @@ class ListAppend
     # Check for orders implied by the ancestors of an edit. If x is an ancestor
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
-    implied_anc <= (to_check * safe_tc * tiebreak).combos(to_check.x => safe_tc.id,
-                                                          to_check.y => tiebreak.pred,
-                                                          safe_tc.pred => tiebreak.id) do |tc,s,t|
+    implied_anc <= (to_check * explicit_tc * tiebreak).combos(to_check.x => explicit_tc.id,
+                                                              to_check.y => tiebreak.pred,
+                                                              explicit_tc.pred => tiebreak.id) do |tc,s,t|
       [s.id, t.pred]
     end
   end
@@ -102,9 +102,9 @@ class ListAppend
     # Only use a tiebreak if we don't have another way to order the two IDs.
     tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
     tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.y > c.x}
-    tiebreak <= tmp_tiebreak.notin(safe_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
+    tiebreak <= tmp_tiebreak.notin(explicit_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
 
-    ord <= safe_tc
+    ord <= explicit_tc
     ord <= tiebreak
     ord <= implied_anc
   end
