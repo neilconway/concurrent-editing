@@ -85,13 +85,13 @@ class StratifiedGraph
   end
 end
 
-sg = SimpleGraph.new
+sg = StratifiedGraph.new
 sg.insert("A", "B")
 sg.insert("A", "C")
 sg.insert("B", "C")
 raise unless sg.all_strat == [[["C", "B"]], [["B", "A"], ["C", "A"]]]
 
-sg = SimpleGraph.new
+sg = StratifiedGraph.new
 sg.insert("A", "B")
 sg.insert("B", "C")
 sg.insert("D", "E")
@@ -106,7 +106,7 @@ raise unless sg.all_strat == [[["F", "E"]],
                               [["C", "B"], ["D", "B"]],
                               [["B", "A"], ["F", "A"]]]
 
-sg = SimpleGraph.new
+sg = StratifiedGraph.new
 sg.insert("A", "B")
 sg.insert("B", "C")
 sg.insert("C", "D")
