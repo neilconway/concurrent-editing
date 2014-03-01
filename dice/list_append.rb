@@ -93,15 +93,14 @@ class ListAppend
     # tiebreaks _before_ x, z must also precede y.
     implied_anc <= (to_check * explicit_tc * tiebreak).combos(to_check.x => explicit_tc.id,
                                                               to_check.y => tiebreak.pred,
-                                                              explicit_tc.pred => tiebreak.id) do |tc,s,t|
-      [s.id, t.pred]
+                                                              explicit_tc.pred => tiebreak.id) do |tc,e,t|
+      [e.id, t.pred]
     end
   end
 
-  stratum 2 do
+  stratum 1 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
-    tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.y > c.x}
+    tmp_tiebreak <= to_check {|c| [[c.x, c.y].max, [c.x, c.y].min]}
     tiebreak <= tmp_tiebreak.notin(explicit_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
 
     ord <= explicit_tc
