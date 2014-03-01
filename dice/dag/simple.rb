@@ -1,11 +1,16 @@
 require 'set'
 
-class SimpleGraph
+class StratifiedGraph
   Node = Struct.new(:id, :parents, :path_len)
 
   def initialize
     @nodes = {}
     reset
+  end
+
+  def reset
+    @frontier = @nodes.values.select {|n| n.path_len == 0}.to_set
+    @current_stratum = 0
   end
 
   # Insert a new partial ordering, y < x; we assume this does not introduce a
@@ -24,11 +29,6 @@ class SimpleGraph
     return if n.path_len >= v
     n.path_len = v
     n.parents.each {|p| update_path_len(p, v + 1)}
-  end
-
-  def reset
-    @frontier = @nodes.values.select {|n| n.path_len == 0}.to_set
-    @current_stratum = 0
   end
 
   def advance_stratum
