@@ -78,11 +78,12 @@ class ListAppend
 
   stratum 0 do
     safe <= (input_buf * safe).lefts(:pred => :id)
-    causal_ord <= safe
-    causal_ord <= (safe * causal_ord).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
-    cursor <= causal_ord
+
     safe_tc <= safe
     safe_tc <= (safe * safe_tc).pairs(:pred => :id) {|s,t| [s.id, t.pred] unless t == LIST_START_TUPLE}
+
+    causal_ord <= safe_tc
+    cursor     <= safe_tc
 
     to_check <= (cursor * causal_ord).pairs {|c,s| [c.id, s.id] if c.id != s.id}
     to_check <= (cursor * causal_ord).pairs {|c,s| [s.id, c.id] if c.id != s.id}
@@ -91,8 +92,8 @@ class ListAppend
     # of y, then x must precede y in the list order. Hence, if any edit z
     # tiebreaks _before_ x, z must also precede y.
     implied_anc <= (to_check * safe_tc * tiebreak).combos(to_check.x => safe_tc.id,
-                                                              to_check.y => tiebreak.pred,
-                                                              safe_tc.pred => tiebreak.id) do |tc,s,t|
+                                                          to_check.y => tiebreak.pred,
+                                                          safe_tc.pred => tiebreak.id) do |tc,s,t|
       [s.id, t.pred]
     end
   end
