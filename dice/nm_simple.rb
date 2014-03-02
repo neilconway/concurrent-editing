@@ -35,7 +35,7 @@ class SimpleNmLinear
     # want to fallback to using this ordering when no other ordering information
     # is available.
     table :tiebreak, ord.schema
-    scratch :tmp_tiebreak, tiebreak.schema
+    scratch :check_tie, tiebreak.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
@@ -107,9 +107,9 @@ class SimpleNmLinear
   end
 
   stratum 2 do
-    tmp_tiebreak <= to_check {|c| [c.x, c.y] if c.x > c.y}
-    tmp_tiebreak <= to_check {|c| [c.y, c.x] if c.x < c.y}
-    tiebreak <= tmp_tiebreak.notin(implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
+    # Only use a tiebreak if we don't have another way to order the two IDs.
+    check_tie <= to_check {|c| [[c.x, c.y].max, [c.x, c.y].min]}
+    tiebreak <= check_tie.notin(implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
 
     ord <= explicit_tc
     ord <= implied_anc
