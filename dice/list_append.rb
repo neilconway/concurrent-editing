@@ -62,8 +62,8 @@ class ListAppend
     scratch :to_check, [:x, :y]
 
     # Tiebreak order
-    scratch :tmp_tiebreak, explicit.schema
-    table :tiebreak, tmp_tiebreak.schema
+    scratch :check_tie, explicit.schema
+    table :tiebreak, explicit.schema
 
     # Implied-by-ancestor order
     table :implied_anc, explicit.schema
@@ -93,15 +93,15 @@ class ListAppend
     # tiebreaks _before_ x, z must also precede y.
     implied_anc <= (to_check * explicit_tc * tiebreak).combos(to_check.x => explicit_tc.id,
                                                               to_check.y => tiebreak.pred,
-                                                              explicit_tc.pred => tiebreak.id) do |tc,e,t|
+                                                              explicit_tc.pred => tiebreak.id) do |_,e,t|
       [e.id, t.pred]
     end
   end
 
   stratum 1 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
-    tmp_tiebreak <= to_check {|c| [[c.x, c.y].max, [c.x, c.y].min]}
-    tiebreak <= tmp_tiebreak.notin(explicit_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
+    check_tie <= to_check {|c| [[c.x, c.y].max, [c.x, c.y].min]}
+    tiebreak <= check_tie.notin(explicit_tc, :id => :pred, :pred => :id).notin(implied_anc, :id => :pred, :pred => :id)
 
     ord <= explicit_tc
     ord <= tiebreak
