@@ -20,8 +20,6 @@ class SimpleNmLinear
     # The constraint that the given ID must follow the "pre" node and precede
     # the "post" node. This encodes a DAG.
     table :constr, input_buf.schema
-    scratch :pre_constr, constr.schema  # Constraints with a valid "pre" edge
-    scratch :post_constr, constr.schema # Constraints with a valid "post" edge
 
     # Output: the computed linearization of the DAG
     table :ord, [:id, :pred]
@@ -57,15 +55,12 @@ class SimpleNmLinear
     input_has_pre <= (input_buf * constr).lefts(:pre => :id)
     constr <= (input_has_pre * constr).lefts(:post => :id)
 
-    pre_constr <= constr {|c| c unless [BEGIN_ID, END_ID].include? c.id}
-    post_constr <= constr {|c| c unless c.id == END_ID}
-
-    sem_hist <= pre_constr {|c| [c.id, c.pre]}
-    sem_hist <= post_constr {|c| [c.id, c.post]}
-    sem_hist <= (pre_constr * sem_hist).pairs(:pre => :to) do |c,r|
+    sem_hist <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
+    sem_hist <= constr {|c| [c.id, c.post] unless c.post.nil?}
+    sem_hist <= (constr * sem_hist).pairs(:pre => :to) do |c,r|
       [c.id, r.from]
     end
-    sem_hist <= (post_constr * sem_hist).pairs(:post => :to) do |c,r|
+    sem_hist <= (constr * sem_hist).pairs(:post => :to) do |c,r|
       [c.id, r.from]
     end
 
@@ -73,8 +68,8 @@ class SimpleNmLinear
     to_check <= (cursor * sem_hist).pairs {|c,s| [c.to, s.to] if c.to != s.to}
     to_check <= (cursor * sem_hist).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
-    explicit <= pre_constr {|c| [c.id, c.pre]}
-    explicit <= post_constr {|c| [c.post, c.id]}
+    explicit <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
+    explicit <= constr {|c| [c.post, c.id] unless c.post.nil?}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
