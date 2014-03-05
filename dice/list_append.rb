@@ -78,7 +78,6 @@ class ListAppend
 
   stratum 0 do
     explicit <= (input_buf * explicit).lefts(:pred => :id)
-
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred] unless t == LIST_START_TUPLE}
 

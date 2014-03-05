@@ -39,8 +39,8 @@ class SimpleNmLinear
     table :implied_anc, ord.schema
 
     # Semantic causal history; we have [from, to] if "from" happens before "to"
-    po_table :sem_hist, [:to, :from]
-    po_scratch :cursor, sem_hist.schema
+    po_table :causal_ord, [:to, :from]
+    po_scratch :cursor, causal_ord.schema
     scratch :to_check, [:x, :y]
   end
 
@@ -55,18 +55,18 @@ class SimpleNmLinear
     input_has_pre <= (input_buf * constr).lefts(:pre => :id)
     constr <= (input_has_pre * constr).lefts(:post => :id)
 
-    sem_hist <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
-    sem_hist <= constr {|c| [c.id, c.post] unless c.post.nil?}
-    sem_hist <= (constr * sem_hist).pairs(:pre => :to) do |c,r|
+    causal_ord <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
+    causal_ord <= constr {|c| [c.id, c.post] unless c.post.nil?}
+    causal_ord <= (constr * causal_ord).pairs(:pre => :to) do |c,r|
       [c.id, r.from]
     end
-    sem_hist <= (constr * sem_hist).pairs(:post => :to) do |c,r|
+    causal_ord <= (constr * causal_ord).pairs(:post => :to) do |c,r|
       [c.id, r.from]
     end
 
-    cursor <= sem_hist
-    to_check <= (cursor * sem_hist).pairs {|c,s| [c.to, s.to] if c.to != s.to}
-    to_check <= (cursor * sem_hist).pairs {|c,s| [s.to, c.to] if c.to != s.to}
+    cursor <= causal_ord
+    to_check <= (cursor * causal_ord).pairs {|c,s| [c.to, s.to] if c.to != s.to}
+    to_check <= (cursor * causal_ord).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
     explicit <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
     explicit <= constr {|c| [c.post, c.id] unless c.post.nil?}
@@ -81,19 +81,19 @@ class SimpleNmLinear
     #
     #   2. y is an ancestor of x, there is a tiebreak z < y, and there is an
     #      explicit constraint y < x; this implies z < x.
-    implied_anc <= (to_check * sem_hist * tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
-                                                                         to_check.y => tiebreak.id,
-                                                                         sem_hist.from => tiebreak.pred,
-                                                                         sem_hist.to => explicit_tc.pred,
-                                                                         sem_hist.from => explicit_tc.id) do |tc,s,t,e|
-      [t.id, s.to]
+    implied_anc <= (to_check * causal_ord * tiebreak * explicit_tc).combos(to_check.x => causal_ord.to,
+                                                                           to_check.y => tiebreak.id,
+                                                                           causal_ord.from => tiebreak.pred,
+                                                                           causal_ord.to => explicit_tc.pred,
+                                                                           causal_ord.from => explicit_tc.id) do |tc,c,t,e|
+      [t.id, c.to]
     end
-    implied_anc <= (to_check * sem_hist * tiebreak * explicit_tc).combos(to_check.x => sem_hist.to,
-                                                                         to_check.y => tiebreak.pred,
-                                                                         sem_hist.from => tiebreak.id,
-                                                                         sem_hist.to => explicit_tc.id,
-                                                                         sem_hist.from => explicit_tc.pred) do |tc,s,t,e|
-      [s.to, t.pred]
+    implied_anc <= (to_check * causal_ord * tiebreak * explicit_tc).combos(to_check.x => causal_ord.to,
+                                                                           to_check.y => tiebreak.pred,
+                                                                           causal_ord.from => tiebreak.id,
+                                                                           causal_ord.to => explicit_tc.id,
+                                                                           causal_ord.from => explicit_tc.pred) do |tc,c,t,e|
+      [c.to, t.pred]
     end
   end
 

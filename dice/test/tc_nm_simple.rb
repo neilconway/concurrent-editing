@@ -16,7 +16,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     assert_equal(ary.sort, b.ord.to_a.sort, "order mismatch")
   end
 
-  def check_sem_hist(b, hist={})
+  def check_causal_order(b, hist={})
     # We let the caller omit sentinels from the semantic history
     hist = hist.hmap {|v| v + [BEGIN_ID, END_ID]}
     hist[BEGIN_ID] = [END_ID]
@@ -28,14 +28,14 @@ class NmSimpleTest < MiniTest::Unit::TestCase
         hist_ary << [k, dep]
       end
     end
-    assert_equal(hist_ary.sort, b.sem_hist.to_a.sort, "incorrect causal history")
+    assert_equal(hist_ary.sort, b.causal_ord.to_a.sort, "incorrect causal history")
   end
 
   def test_empty_doc
     s = SimpleNmLinear.new
     s.tick
     check_linear_order(s)
-    check_sem_hist(s)
+    check_causal_order(s)
     assert_equal([[END_ID, BEGIN_ID]].to_set, s.explicit.to_set)
     assert_equal([], s.implied_anc.to_a)
     assert_equal([], s.tiebreak.to_a)
@@ -48,7 +48,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [1, 9, 2]]
     s.tick
     check_linear_order(s, 9, 1, 2)
-    check_sem_hist(s, 9 => [], 2 => [9], 1 => [2, 9])
+    check_causal_order(s, 9 => [], 2 => [9], 1 => [2, 9])
   end
 
   def test_tiebreak
@@ -58,7 +58,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 1, 2)
-    check_sem_hist(s, 1 => [], 2 => [])
+    check_causal_order(s, 1 => [], 2 => [])
   end
 
   # 3 -> 1 is clear, but 2 might plausibly be placed anywhere with respect to 3
@@ -78,7 +78,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     2.times do
       s.tick
       check_linear_order(s, 3, 1, 2)
-      check_sem_hist(s, 1 => [], 2 => [], 3 => [1])
+      check_causal_order(s, 1 => [], 2 => [], 3 => [1])
       assert_equal([[2, 3]].to_set, s.implied_anc.to_set)
     end
   end
@@ -93,7 +93,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     2.times do
       s.tick
       check_linear_order(s, 2, 3, 1)
-      check_sem_hist(s, 2 => [], 3 => [], 1 => [3])
+      check_causal_order(s, 2 => [], 3 => [], 1 => [3])
     end
   end
 
@@ -108,7 +108,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 4, 1, 3, 2)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
 
   def test_implied_anc_concurrent_split_up1
@@ -119,13 +119,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 4, 1, 2)
-    check_sem_hist(s, 1 => [], 2 => [], 4 => [1])
+    check_causal_order(s, 1 => [], 2 => [], 4 => [1])
 
     s.input_buf <+ [[3, BEGIN_ID, 2]]
     s.tick
 
     check_linear_order(s, 4, 1, 3, 2)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
   end
 
   def test_implied_anc_concurrent_split_up2
@@ -136,12 +136,12 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 1, 3, 2)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [2])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [2])
 
     s.input_buf <+ [[4, BEGIN_ID, 1]]
     s.tick
 
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [2], 4 => [1])
     check_linear_order(s, 4, 1, 3, 2)
   end
 
@@ -153,7 +153,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
                     [1, 9, END_ID]]
     s.tick
 
-    check_sem_hist(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
+    check_causal_order(s, 8 => [], 9 => [], 2 => [8], 1 => [9])
     check_linear_order(s, 8, 2, 9, 1)
   end
 
@@ -166,7 +166,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 0, 4, 1, 2)
-    check_sem_hist(s, 1 => [], 2 => [], 0 => [2], 4 => [1])
+    check_causal_order(s, 1 => [], 2 => [], 0 => [2], 4 => [1])
   end
 
   def test_deep_right_branch_concurrent_edit_near_root
@@ -183,13 +183,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
     s.tick
 
     check_linear_order(s, 1, 2, 3, 4)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [1], 4 => [2])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [1], 4 => [2])
 
     s.input_buf <+ [[5, 3, 4]]
     s.tick
 
     check_linear_order(s, 1, 2, 3, 5, 4)
-    check_sem_hist(s, 1 => [], 2 => [], 3 => [1], 4 => [2], 5 => [1,2,3,4])
+    check_causal_order(s, 1 => [], 2 => [], 3 => [1], 4 => [2], 5 => [1,2,3,4])
   end
 
   def test_tree_1
@@ -211,13 +211,13 @@ class NmSimpleTest < MiniTest::Unit::TestCase
       45 => [14, 18], 20 => [28, 18], 5 => [37, 45, 14, 18],
       7 => [20, 37, 14, 18, 28]
     }
-    check_sem_hist(s, sem_hist)
+    check_causal_order(s, sem_hist)
 
     s.input_buf <+ [[99, 10, 18], [1, 14, 28]]
     s.tick
 
     check_linear_order(s, 10, 99, 18, 14, 1, 28, 20, 7, 37, 5, 45)
-    check_sem_hist(s, sem_hist.merge(99 => [10, 18], 1 => [14, 18, 28]))
+    check_causal_order(s, sem_hist.merge(99 => [10, 18], 1 => [14, 18, 28]))
   end
 
   def test_doc_tree
@@ -238,10 +238,10 @@ class NmSimpleTest < MiniTest::Unit::TestCase
 
     doc_order = doc.map {|d| d.first}
     check_linear_order(s, *doc_order)
-    check_sem_hist(s,
-                   10 => [], 11 => [10], 12 => [10, 11], 13 => [10, 11, 12],
-                   14 => [10,11,12], 15 => [10,11,12,13,14], 30 => [],
-                   31 => [30], 99 => [30, 31, 40], 40 => [], 41 => [40])
+    check_causal_order(s,
+                       10 => [], 11 => [10], 12 => [10, 11], 13 => [10, 11, 12],
+                       14 => [10,11,12], 15 => [10,11,12,13,14], 30 => [],
+                       31 => [30], 99 => [30, 31, 40], 40 => [], 41 => [40])
   end
 
   DOC_SIZE = 22
@@ -265,7 +265,7 @@ class NmSimpleTest < MiniTest::Unit::TestCase
       sem_hist[d[0]] = []
       i.times {|j| sem_hist[d[0]] << doc[j][0]}
     end
-    check_sem_hist(s, sem_hist)
+    check_causal_order(s, sem_hist)
   end
 
   def stable_hash(v)
