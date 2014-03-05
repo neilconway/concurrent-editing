@@ -16,7 +16,6 @@ class SimpleNmLinear
     # (semantic) causal delivery is respected.
     table :input_buf, [:id] => [:pre, :post]
     scratch :input_has_pre, input_buf.schema
-    scratch :input_has_post, input_buf.schema
 
     # The constraint that the given ID must follow the "pre" node and precede
     # the "post" node. This encodes a DAG.
@@ -56,8 +55,7 @@ class SimpleNmLinear
 
   stratum 0 do
     input_has_pre <= (input_buf * constr).lefts(:pre => :id)
-    input_has_post <= (input_has_pre * constr).lefts(:post => :id)
-    constr <= input_has_post
+    constr <= (input_has_pre * constr).lefts(:post => :id)
 
     pre_constr <= constr {|c| c unless [BEGIN_ID, END_ID].include? c.id}
     post_constr <= constr {|c| c unless c.id == END_ID}
@@ -70,8 +68,8 @@ class SimpleNmLinear
     sem_hist <= (post_constr * sem_hist).pairs(:post => :to) do |c,r|
       [c.id, r.from]
     end
-    cursor <= sem_hist
 
+    cursor <= sem_hist
     to_check <= (cursor * sem_hist).pairs {|c,s| [c.to, s.to] if c.to != s.to}
     to_check <= (cursor * sem_hist).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
