@@ -79,9 +79,7 @@ class SimpleNmLinear
     explicit <= post_constr {|c| [c.post, c.id]}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
-  end
 
-  stratum 1 do
     # Infer the orderings over child nodes implied by their ancestors. We look
     # for two cases:
     #
@@ -106,7 +104,7 @@ class SimpleNmLinear
     end
   end
 
-  stratum 2 do
+  stratum 1 do
     # Only use a tiebreak if we don't have another way to order the two IDs.
     check_tie <= to_check {|c| [[c.x, c.y].max, [c.x, c.y].min]}
     tiebreak <= check_tie.notin(implied_anc, :id => :pred, :pred => :id).notin(explicit_tc, :id => :pred, :pred => :id)
