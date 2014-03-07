@@ -33,8 +33,8 @@ class SimpleNmLinear
     # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    table :tiebreak, explicit.schema
     scratch :check_tie, explicit.schema
+    table :tiebreak, explicit.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
@@ -62,8 +62,8 @@ class SimpleNmLinear
     causal_ord <= (safe * causal_ord).pairs(:post => :to) do |s,r|
       [s.id, r.from]
     end
-
     cursor <= causal_ord
+
     to_check <= (cursor * causal_ord).pairs {|c,s| [c.to, s.to] if c.to != s.to}
     to_check <= (cursor * causal_ord).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
