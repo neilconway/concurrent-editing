@@ -21,27 +21,27 @@ class SimpleNmLinear
     # the "post" node. This encodes a DAG.
     table :safe, input_buf.schema
 
-    # Output: the computed linearization of the DAG
-    table :ord, [:id, :pred]
+    # Semantic causal history; we have [from, to] if "from" happens before "to"
+    po_table :causal_ord, [:to, :from]
+    po_scratch :cursor, causal_ord.schema
+    scratch :to_check, [:x, :y]
 
     # Explicit orderings
-    table :explicit, ord.schema
+    table :explicit, [:id, :pred]
     table :explicit_tc, explicit.schema
 
     # Tiebreaker orderings. These are defined for all pairs a,b -- but we only
     # want to fallback to using this ordering when no other ordering information
     # is available.
-    table :tiebreak, ord.schema
-    scratch :check_tie, tiebreak.schema
+    table :tiebreak, explicit.schema
+    scratch :check_tie, explicit.schema
 
     # Orderings implied by considering tiebreaks between the semantic causal
     # history ("ancestors") of the edits from,to
-    table :implied_anc, ord.schema
+    table :implied_anc, explicit.schema
 
-    # Semantic causal history; we have [from, to] if "from" happens before "to"
-    po_table :causal_ord, [:to, :from]
-    po_scratch :cursor, causal_ord.schema
-    scratch :to_check, [:x, :y]
+    # Output: the computed linearization of the DAG
+    table :ord, explicit.schema
   end
 
   bootstrap do

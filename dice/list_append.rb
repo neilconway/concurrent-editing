@@ -56,8 +56,8 @@ class ListAppend
     table :input_buf, [:id] => [:pred]
     table :explicit, [:id, :pred]
     table :explicit_tc, explicit.schema
-    po_scratch :causal_ord, explicit.schema
 
+    po_scratch :causal_ord, explicit.schema
     po_scratch :cursor, explicit.schema
     scratch :to_check, [:x, :y]
 
