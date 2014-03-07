@@ -11,15 +11,15 @@ class SimpleNmLinear
 
   state do
     # Input buffer. Edit operations arrive here; once the dependencies of an
-    # edit have been delivered, the edit itself can be delivered to "constr" and
-    # removed from the buffer. In other words, the buffer ensures that
-    # (semantic) causal delivery is respected.
+    # edit are safe, the edit itself can be delivered to "safe" and removed from
+    # the buffer. In other words, the buffer ensures that (semantic) causal
+    # delivery is respected.
     table :input_buf, [:id] => [:pre, :post]
     scratch :input_has_pre, input_buf.schema
 
     # The constraint that the given ID must follow the "pre" node and precede
     # the "post" node. This encodes a DAG.
-    table :constr, input_buf.schema
+    table :safe, input_buf.schema
 
     # Output: the computed linearization of the DAG
     table :ord, [:id, :pred]
@@ -45,31 +45,30 @@ class SimpleNmLinear
   end
 
   bootstrap do
-    # Sentinel constraints. We choose to have END be the causally first edit;
-    # then BEGIN is placed before END. Naturally these could be reversed.
-    constr <+ [[BEGIN_ID, nil, END_ID],
-               [END_ID, nil, nil]]
+    # Sentinels. We choose to have END be the causally first edit; then BEGIN is
+    # placed before END. Naturally these could be reversed.
+    safe <+ [[BEGIN_ID, nil, END_ID], [END_ID, nil, nil]]
   end
 
   stratum 0 do
-    input_has_pre <= (input_buf * constr).lefts(:pre => :id)
-    constr <= (input_has_pre * constr).lefts(:post => :id)
+    input_has_pre <= (input_buf * safe).lefts(:pre => :id)
+    safe <= (input_has_pre * safe).lefts(:post => :id)
 
-    causal_ord <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
-    causal_ord <= constr {|c| [c.id, c.post] unless c.post.nil?}
-    causal_ord <= (constr * causal_ord).pairs(:pre => :to) do |c,r|
-      [c.id, r.from]
+    causal_ord <= safe {|s| [s.id, s.pre] unless s.pre.nil?}
+    causal_ord <= safe {|s| [s.id, s.post] unless s.post.nil?}
+    causal_ord <= (safe * causal_ord).pairs(:pre => :to) do |s,r|
+      [s.id, r.from]
     end
-    causal_ord <= (constr * causal_ord).pairs(:post => :to) do |c,r|
-      [c.id, r.from]
+    causal_ord <= (safe * causal_ord).pairs(:post => :to) do |s,r|
+      [s.id, r.from]
     end
 
     cursor <= causal_ord
     to_check <= (cursor * causal_ord).pairs {|c,s| [c.to, s.to] if c.to != s.to}
     to_check <= (cursor * causal_ord).pairs {|c,s| [s.to, c.to] if c.to != s.to}
 
-    explicit <= constr {|c| [c.id, c.pre] unless c.pre.nil?}
-    explicit <= constr {|c| [c.post, c.id] unless c.post.nil?}
+    explicit <= safe {|s| [s.id, s.pre] unless s.pre.nil?}
+    explicit <= safe {|s| [s.post, s.id] unless s.post.nil?}
     explicit_tc <= explicit
     explicit_tc <= (explicit * explicit_tc).pairs(:pred => :id) {|e,t| [e.id, t.pred]}
 
